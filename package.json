@@ -2,11 +2,17 @@
   "name": "keystone-field-nested-set",
   "version": "0.0.1",
   "description": "nested set field to keystonejs",
-  "main": "index.js",
-  "scripts": {
-    "dev": "keystone dev",
-    "start": "keystone start",
-    "build": "keystone build"
+  "main": "dist/fields-nestedset.cjs.js",
+  "module": "dist/fields-nestedset.esm.js",
+  "files": [
+    "dist",
+    "views"
+  ],
+  "preconstruct": {
+    "entrypoints": [
+      "index.ts",
+      "views/index.tsx"
+    ]
   },
   "keywords": [
     "keystone",
@@ -21,5 +27,9 @@
   },
   "devDependencies": {
     "typescript": "^4.5.5"
+  },
+  "repository": "https://github.com/Nikitoring/keystone-field-nested-set",
+  "engines": {
+    "node": "^12.20 || >= 14.13"
   }
 }
