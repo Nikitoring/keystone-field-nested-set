@@ -4,10 +4,14 @@
   "description": "nested set field to keystonejs",
   "main": "dist/keystone-field-nested-set.cjs.js",
   "module": "dist/keystone-field-nested-set.esm.js",
+  "private": true,
   "files": [
     "dist",
     "views"
   ],
+  "scripts": {
+    "postinstall": "preconstruct dev && manypkg check"
+  },
   "preconstruct": {
     "entrypoints": [
       "index.ts",
@@ -21,12 +25,22 @@
   "author": "Nikitoring",
   "license": "MIT",
   "dependencies": {
-    "@keystone-6/core": "^1.0.1",
+    "@babel/core": "^7.16.0",
+    "@babel/plugin-proposal-class-properties": "^7.16.0",
+    "@babel/plugin-proposal-object-rest-spread": "^7.16.0",
+    "@babel/plugin-syntax-dynamic-import": "^7.8.3",
+    "@babel/plugin-transform-runtime": "^7.16.0",
+    "@babel/preset-env": "^7.16.0",
+    "@babel/preset-react": "^7.16.0",
+    "@babel/preset-typescript": "^7.16.0",
+    "@babel/runtime": "^7.16.3",
+    "@keystone-6/core": "^1.0.0",
     "@keystone-ui/fields": "^6.0.0",
-    "react": "^17.0.2"
-  },
-  "devDependencies": {
-    "typescript": "^4.5.5"
+    "@manypkg/cli": "0.18.0",
+    "@preconstruct/cli": "2.1.5",
+    "@types/react": "^17.0.35",
+    "react": "^17.0.2",
+    "typescript": "^4.4.4"
   },
   "peerDependencies": {
     "@keystone-6/core": ">=^1.0.0",
