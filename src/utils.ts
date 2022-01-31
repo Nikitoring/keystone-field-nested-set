@@ -7,7 +7,7 @@ export function isRoot(data: { [key: string]: any }) {
 export function createRoot() {
   return {
     left: 1,
-    rght: 2,
+    right: 2,
     depth: 0
   };
 }
@@ -22,7 +22,7 @@ async function getRoot(context: KeystoneContext, field: string, listType: string
       id: true,
       [`${field}_depth`]: true,
       [`${field}_left`]: true,
-      [`${field}_rght`]: true
+      [`${field}_right`]: true
     }
   });
   return roots[0];
@@ -44,9 +44,9 @@ export async function getWeight(
     where: {
       [`${field}_depth`]: depth,
       [`${field}_left`]: {
-        lt: data.rght
+        lt: data.right
       },
-      [`${field}_rght`]: {
+      [`${field}_right`]: {
         gt: data.left
       }
     }
@@ -70,8 +70,8 @@ export async function getParentId(
       [`${field}_left`]: {
         lt: data.left
       },
-      [`${field}_rght`]: {
-        gt: data.rght
+      [`${field}_right`]: {
+        gt: data.right
       }
     },
     select: {
@@ -97,15 +97,15 @@ export async function getParent(
       [`${field}_left`]: {
         lt: data[`${field}_left`]
       },
-      [`${field}_rght`]: {
-        gt: data[`${field}_rght`]
+      [`${field}_right`]: {
+        gt: data[`${field}_right`]
       }
     },
     select: {
       id: true,
       [`${field}_depth`]: true,
       [`${field}_left`]: true,
-      [`${field}_rght`]: true
+      [`${field}_right`]: true
     }
   });
   return parent[0];
@@ -125,8 +125,8 @@ export async function getchildrenCount(
       [`${field}_left`]: {
         gt: data.left
       },
-      [`${field}_rght`]: {
-        lt: data.rght
+      [`${field}_right`]: {
+        lt: data.right
       }
     },
     select: {
@@ -147,7 +147,7 @@ export async function getPrevSibling(prevSibling: string, context: KeystoneConte
   });
   if (!currentNode) return false;
   return {
-    rght: currentNode[`${fieldKey}_left`] - 1
+    right: currentNode[`${fieldKey}_left`] - 1
   };
 }
 
@@ -157,7 +157,7 @@ export async function getNextSibling(nextSibling: string, context: KeystoneConte
   });
   if (!currentNode) return false;
   return {
-    left: currentNode[`${fieldKey}_rght`] + 1
+    left: currentNode[`${fieldKey}_right`] + 1
   };
 }
 
@@ -170,8 +170,8 @@ export async function getChildOf(childOf: string, context: KeystoneContext, list
     left: {
       lt: currentNode[`${fieldKey}_left`]
     },
-    rght: {
-      gt: currentNode[`${fieldKey}_rght`]
+    right: {
+      gt: currentNode[`${fieldKey}_right`]
     }
   };
 }
@@ -185,8 +185,8 @@ export async function getParentOf(parentId: string, context: KeystoneContext, li
     left: {
       gt: currentNode[`${fieldKey}_left`]
     },
-    rght: {
-      lt: currentNode[`${fieldKey}_rght`]
+    right: {
+      lt: currentNode[`${fieldKey}_right`]
     }
   };
 }
@@ -197,7 +197,7 @@ export async function insertLastChildOf(parentId: string, context: KeystoneConte
     where: { id: parentId },
     select: {
       id: true,
-      [`${fieldKey}_rght`]: true,
+      [`${fieldKey}_right`]: true,
       [`${fieldKey}_left`]: true,
       [`${fieldKey}_depth`]: true
     }
@@ -206,22 +206,22 @@ export async function insertLastChildOf(parentId: string, context: KeystoneConte
   const tree = await fetchTree(parentNode, context, listKey, fieldKey);
   let transactions = [];
   for (const node of tree) {
-    if (node[`${fieldKey}_left`] > parentNode[`${fieldKey}_rght`]) {
+    if (node[`${fieldKey}_left`] > parentNode[`${fieldKey}_right`]) {
       transactions.push(
         context.prisma[bdTable].update({
           where: {
             id: node.id
           },
           data: {
-            [`${fieldKey}_rght`]: node[`${fieldKey}_rght`] + 2,
+            [`${fieldKey}_right`]: node[`${fieldKey}_right`] + 2,
             [`${fieldKey}_left`]: node[`${fieldKey}_left`] + 2
           }
         })
       );
     }
     if (
-      node[`${fieldKey}_rght`] >= parentNode[`${fieldKey}_rght`] &&
-      node[`${fieldKey}_left`] < parentNode[`${fieldKey}_rght`]
+      node[`${fieldKey}_right`] >= parentNode[`${fieldKey}_right`] &&
+      node[`${fieldKey}_left`] < parentNode[`${fieldKey}_right`]
     ) {
       transactions.push(
         context.prisma[bdTable].update({
@@ -229,7 +229,7 @@ export async function insertLastChildOf(parentId: string, context: KeystoneConte
             id: node.id
           },
           data: {
-            [`${fieldKey}_rght`]: node[`${fieldKey}_rght`] + 2
+            [`${fieldKey}_right`]: node[`${fieldKey}_right`] + 2
           }
         })
       );
@@ -237,8 +237,8 @@ export async function insertLastChildOf(parentId: string, context: KeystoneConte
   }
   await context.prisma.$transaction(transactions);
   return {
-    left: parentNode[`${fieldKey}_rght`],
-    rght: parentNode[`${fieldKey}_rght`] + 1,
+    left: parentNode[`${fieldKey}_right`],
+    right: parentNode[`${fieldKey}_right`] + 1,
     depth: parentNode[`${fieldKey}_depth`] + 1
   };
 }
@@ -254,14 +254,14 @@ export async function insertNextSiblingOf(
     where: { id: nextSiblingId },
     select: {
       id: true,
-      [`${fieldKey}_rght`]: true,
+      [`${fieldKey}_right`]: true,
       [`${fieldKey}_left`]: true,
       [`${fieldKey}_depth`]: true
     }
   });
   if (!destNode) return false;
-  const newLeft = destNode[`${fieldKey}_rght`] + 1;
-  const newRight = destNode[`${fieldKey}_rght`] + 2;
+  const newLeft = destNode[`${fieldKey}_right`] + 1;
+  const newRight = destNode[`${fieldKey}_right`] + 2;
   const root = await getRoot(context, fieldKey, listKey);
   await shiftLeftRightValues(newLeft, 2, root, {
     context,
@@ -270,7 +270,7 @@ export async function insertNextSiblingOf(
   });
   return {
     left: newLeft,
-    rght: newRight,
+    right: newRight,
     depth: destNode[`${fieldKey}_depth`]
   };
 }
@@ -286,7 +286,7 @@ export async function insertPrevSiblingOf(
     where: { id: nextSiblingId },
     select: {
       id: true,
-      [`${fieldKey}_rght`]: true,
+      [`${fieldKey}_right`]: true,
       [`${fieldKey}_left`]: true,
       [`${fieldKey}_depth`]: true
     }
@@ -302,7 +302,7 @@ export async function insertPrevSiblingOf(
   });
   return {
     left: newLeft,
-    rght: newRight,
+    right: newRight,
     depth: destNode[`${fieldKey}_depth`]
   };
 }
@@ -329,7 +329,7 @@ async function fetchTree(
       id: true,
       title: true,
       [`${fieldKey}_left`]: true,
-      [`${fieldKey}_rght`]: true,
+      [`${fieldKey}_right`]: true,
       [`${fieldKey}_depth`]: true
     }
   };
@@ -349,7 +349,7 @@ export async function moveAsChildOf(
     where: { id: parentId },
     select: {
       id: true,
-      [`${fieldKey}_rght`]: true,
+      [`${fieldKey}_right`]: true,
       [`${fieldKey}_left`]: true,
       [`${fieldKey}_depth`]: true
     }
@@ -368,14 +368,14 @@ async function shiftLeftRightValues(
       [`${field}_left`]: {
         gte: first
       },
-      [`${field}_rght`]: {
-        lte: root[`${field}_rght`]
+      [`${field}_right`]: {
+        lte: root[`${field}_right`]
       }
     },
     select: {
       id: true,
       [`${field}_left`]: true,
-      [`${field}_rght`]: true,
+      [`${field}_right`]: true,
       [`${field}_depth`]: true
     }
   });
@@ -396,13 +396,13 @@ async function shiftLeftRightValues(
     where: {
       AND: [
         {
-          [`${field}_rght`]: {
+          [`${field}_right`]: {
             gte: first
           }
         },
         {
-          [`${field}_rght`]: {
-            lte: root[`${field}_rght`]
+          [`${field}_right`]: {
+            lte: root[`${field}_right`]
           }
         }
       ],
@@ -413,7 +413,7 @@ async function shiftLeftRightValues(
     select: {
       id: true,
       [`${field}_left`]: true,
-      [`${field}_rght`]: true,
+      [`${field}_right`]: true,
       [`${field}_depth`]: true
     }
   });
@@ -424,7 +424,7 @@ async function shiftLeftRightValues(
           id: rightNode.id
         },
         data: {
-          [`${field}_rght`]: rightNode[`${field}_rght`] + increment
+          [`${field}_right`]: rightNode[`${field}_right`] + increment
         }
       })
     );

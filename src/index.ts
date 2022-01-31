@@ -44,13 +44,13 @@ type SelectDisplayConfig = {
 export type NestedSetData = {
   depth: number;
   left: number;
-  rght: number;
+  right: number;
 };
 
 const nestedSetOutputFields = graphql.fields<NestedSetData>()({
   depth: graphql.field({ type: graphql.Int }),
   left: graphql.field({ type: graphql.nonNull(graphql.Int) }),
-  rght: graphql.field({ type: graphql.nonNull(graphql.Int) }),
+  right: graphql.field({ type: graphql.nonNull(graphql.Int) }),
   weight: graphql.field({
     type: graphql.Int,
     resolve(data, args, context, type) {
@@ -100,8 +100,8 @@ const NestedSetFieldInput = graphql.inputObject({
   }
 });
 
-const NestedSetFilter = graphql.inputObject({
-  name: 'NestedSetFilter',
+const NestedSetFilterInput = graphql.inputObject({
+  name: 'NestedSetFilterInput',
   fields: {
     prevSiblingId: graphql.arg({ type: graphql.ID }),
     nextSiblingId: graphql.arg({ type: graphql.ID }),
@@ -220,7 +220,7 @@ export const nestedSet =
           scalar: 'Int',
           mode: 'optional'
         },
-        rght: {
+        right: {
           kind: 'scalar',
           scalar: 'Int',
           mode: 'optional'
@@ -239,7 +239,7 @@ export const nestedSet =
           const currentItem = {
             id: item.id,
             [`${meta.fieldKey}_left`]: item[`${meta.fieldKey}_left`],
-            [`${meta.fieldKey}_rght`]: item[`${meta.fieldKey}_rght`],
+            [`${meta.fieldKey}_right`]: item[`${meta.fieldKey}_right`],
             [`${meta.fieldKey}_depth`]: item[`${meta.fieldKey}_depth`]
           };
           if (operation === 'update') {
@@ -249,7 +249,7 @@ export const nestedSet =
       },
       input: {
         where: {
-          arg: graphql.arg({ type: NestedSetFilter }),
+          arg: graphql.arg({ type: NestedSetFilterInput }),
           resolve(value, context) {
             return filterResolver(value, context, meta.listKey, meta.fieldKey);
           }
@@ -287,11 +287,11 @@ export const nestedSet =
       },
       output: graphql.field({
         type: NestedSetFieldOutput,
-        resolve({ value: { left, rght, depth } }) {
-          if (left === null || rght === null || depth === null) {
+        resolve({ value: { left, right, depth } }) {
+          if (left === null || right === null || depth === null) {
             return null;
           }
-          return { left, rght, depth };
+          return { left, right, depth };
         }
       }),
       views,
