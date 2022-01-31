@@ -29,6 +29,7 @@ import {
 } from './utils';
 
 const views = path.join(path.dirname(__dirname), 'views');
+
 type SelectDisplayConfig = {
   ui?: {
     // Sets the relationship to display as a Select field

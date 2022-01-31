@@ -11,11 +11,11 @@ import {
   FieldControllerConfig,
   FieldProps,
   // ListMeta
-} from '../../../../types';
+} from '@keystone-6/core/types';
 
 import { useList } from '../../../../admin-ui/context';
 import { Link } from '../../../../admin-ui/router';
-import { CellContainer } from '../../../../admin-ui/components';
+import { CellContainer } from '@keystone-ui/fields';
 import { RelationshipSelect } from './RelationshipSelect';
 
 export const Field = ({

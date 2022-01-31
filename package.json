@@ -10,7 +10,8 @@
     "views"
   ],
   "scripts": {
-    "postinstall": "preconstruct dev && manypkg check"
+    "postinstall": "preconstruct dev",
+    "build": "preconstruct build"
   },
   "preconstruct": {
     "entrypoints": [
