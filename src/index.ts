@@ -1,5 +1,4 @@
-import path from 'path';
-
+// ! Field Right in data return Boolean in virtual fields (if Field Right like "rght" this work)
 import {
   BaseListTypeInfo,
   FieldTypeFunc,
@@ -11,10 +10,8 @@ import {
 } from '@keystone-6/core/types';
 import { graphql } from '@keystone-6/core';
 import {
-  isRoot,
   createRoot,
   isLeaf,
-  fetchRoot,
   getWeight,
   getParentId,
   getchildrenCount,
@@ -25,10 +22,13 @@ import {
   insertLastChildOf,
   insertNextSiblingOf,
   insertPrevSiblingOf,
-  moveAsChildOf
+  moveNode,
+  deleteResolver
 } from './utils';
 
-const views = path.join(path.dirname(__dirname), 'views');
+// const views = path.join(path.dirname(__dirname), 'views');
+const views = require.resolve('./views');
+// console.log('views', views);
 
 type SelectDisplayConfig = {
   ui?: {
@@ -45,17 +45,17 @@ type SelectDisplayConfig = {
 export type NestedSetData = {
   depth: number;
   left: number;
-  right: number;
+  rght: number;
 };
 
 const nestedSetOutputFields = graphql.fields<NestedSetData>()({
   depth: graphql.field({ type: graphql.Int }),
   left: graphql.field({ type: graphql.nonNull(graphql.Int) }),
-  right: graphql.field({ type: graphql.nonNull(graphql.Int) }),
+  rght: graphql.field({ type: graphql.nonNull(graphql.Int) }),
   weight: graphql.field({
     type: graphql.Int,
-    resolve(data, args, context, type) {
-      return getWeight(data, context, type.path.prev?.key, type.path.prev?.typename);
+    resolve(data, args, type, context) {
+      return getWeight(data, type, context.path.prev?.key, context.path.prev?.typename);
     }
   }),
   isLeaf: graphql.field({
@@ -143,13 +143,28 @@ async function inputResolver(
 async function updateInputResolver(
   data: NestedSetFieldInputType,
   context: KeystoneContext,
-  listKey: string,
-  fieldKey: string,
-  current: { [key: string]: any }
+  list: string,
+  field: string
 ) {
   // return;
-  const { parentId, prevSiblingOf, nextSiblingOf } = data[fieldKey];
-  console.log(parentId);
+  const { parentId, prevSiblingOf, nextSiblingOf } = data;
+  const bdTable = list.toLowerCase();
+  if (parentId) {
+    const parent = await context.prisma[bdTable].findUnique({
+      where: { id: parentId },
+      select: {
+        id: true,
+        [`${field}_rght`]: true,
+        [`${field}_left`]: true,
+        [`${field}_depth`]: true
+      }
+    });
+    return {
+      left: parent[`${field}_rght`],
+      rght: parent[`${field}_rght`] + 2,
+      depth: parent[`${field}_depth`] + 1
+    };
+  }
   // if (parentId) {
   //   return await moveAsChildOf(parentId, context, listKey, fieldKey, current);
   // }
@@ -221,7 +236,7 @@ export const nestedSet =
           scalar: 'Int',
           mode: 'optional'
         },
-        right: {
+        rght: {
           kind: 'scalar',
           scalar: 'Int',
           mode: 'optional'
@@ -235,17 +250,23 @@ export const nestedSet =
     })({
       ...commonConfig,
       hooks: {
-        // ...config.hooks,
-        beforeOperation: ({ inputData, context, item, operation, resolvedData, listKey, fieldKey }) => {
-          const currentItem = {
-            id: item.id,
-            [`${meta.fieldKey}_left`]: item[`${meta.fieldKey}_left`],
-            [`${meta.fieldKey}_right`]: item[`${meta.fieldKey}_right`],
-            [`${meta.fieldKey}_depth`]: item[`${meta.fieldKey}_depth`]
-          };
-          if (operation === 'update') {
-            return updateInputResolver(inputData, context, listKey, fieldKey, currentItem);
+        resolveInput: async ({ listKey, fieldKey, operation, inputData, item, resolvedData, context }) => {
+          let currentItem = {};
+          if (item && item.id) {
+            currentItem = {
+              id: item.id,
+              [`${meta.fieldKey}_left`]: item[`${meta.fieldKey}_left`],
+              [`${meta.fieldKey}_rght`]: item[`${meta.fieldKey}_rght`],
+              [`${meta.fieldKey}_depth`]: item[`${meta.fieldKey}_depth`]
+            };
           }
+          if (operation === 'update') {
+            return moveNode(inputData, context, listKey, fieldKey, currentItem);
+          }
+          // if (operation === 'delete') {
+          //   return deleteResolver(inputData, context, listKey, fieldKey, currentItem);
+          // }
+          return resolvedData[fieldKey];
         }
       },
       input: {
@@ -258,24 +279,14 @@ export const nestedSet =
         create: {
           arg: graphql.arg({ type: NestedSetFieldInput }),
           resolve(value, context) {
-            if (value === undefined || value === null) {
-              return createRoot();
-            }
             return inputResolver(value, context, meta.listKey, meta.fieldKey);
           }
         },
         update: {
           arg: graphql.arg({ type: NestedSetFieldInput }),
-          async resolve() {
-            return null;
+          async resolve(value, context) {
+            return updateInputResolver(value, context, meta.listKey, meta.fieldKey);
           }
-          // async resolve(value, context) {
-          //   // if (value === undefined || value === null) {
-          //   //   return value;
-          //   // }
-          //   console.log('object');
-          //   return updateInputResolver(value, context, meta.listKey, meta.fieldKey, currentItem);
-          // },
         },
         orderBy: {
           arg: graphql.arg({ type: orderDirectionEnum }),
@@ -288,14 +299,14 @@ export const nestedSet =
       },
       output: graphql.field({
         type: NestedSetFieldOutput,
-        resolve({ value: { left, right, depth } }) {
-          if (left === null || right === null || depth === null) {
+        resolve({ value: { left, rght, depth } }) {
+          if (left === null || rght === null || depth === null) {
             return null;
           }
-          return { left, right, depth };
+          return { left, rght, depth };
         }
       }),
-      views,
+      views: require.resolve('./views'),
       unreferencedConcreteInterfaceImplementations: [NestedSetFieldOutput]
     });
   };
