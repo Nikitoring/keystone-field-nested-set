@@ -108,7 +108,6 @@ export async function getchildrenCount(
   if (isLeaf(data)) {
     return 0;
   }
-  console.log('DATA: ', data);
   const children = await context.prisma[listType.toLowerCase()].findMany({
     where: {
       [`${field}_left`]: {
