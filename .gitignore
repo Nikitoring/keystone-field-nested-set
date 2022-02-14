@@ -5,6 +5,4 @@ node_modules/
 .vscode/
 .nyc_output/
 package-lock.json
-dist/
-views/
 yarn.lock
