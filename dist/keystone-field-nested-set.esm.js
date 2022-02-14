@@ -1,1 +1,0 @@
-/home/vseviknik/projects/keystone-field-nested-set/src/index.ts

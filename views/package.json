@@ -1,4 +1,0 @@
-{
-  "main": "dist/keystone-field-nested-set-views.cjs.js",
-  "module": "dist/keystone-field-nested-set-views.esm.js"
-}

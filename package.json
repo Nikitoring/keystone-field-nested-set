@@ -9,9 +9,6 @@
     "dist",
     "views"
   ],
-  "scripts": {
-    "postinstall": "preconstruct dev && manypkg check"
-  },
   "dependencies": {
     "@babel/runtime": "^7.16.3",
     "@babel/core": "^7.16.0",
@@ -43,7 +40,8 @@
     "entrypoints": [
       "index.ts",
       "views/index.tsx"
-    ]
+    ],
+    "distFilenameStrategy": "unscoped-package-name"
   },
   "repository": "https://github.com/Nikitoring/keystone-field-nested-set"
 }
