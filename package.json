@@ -6,11 +6,11 @@
   "module": "dist/keystone-field-nested-set.esm.js",
   "private": true,
   "files": [
-    "dist",
-    "views"
+    "dist"
   ],
   "scripts": {
-    "postinstall": "preconstruct dev"
+    "postinstall": "preconstruct dev",
+    "build": "preconstruct build"
   },
   "dependencies": {
     "@babel/runtime": "^7.16.3",
@@ -41,10 +41,8 @@
   },
   "preconstruct": {
     "entrypoints": [
-      "index.ts",
-      "views/index.tsx"
-    ],
-    "distFilenameStrategy": "unscoped-package-name"
+      "index.ts"
+    ]
   },
   "repository": "https://github.com/Nikitoring/keystone-field-nested-set"
 }
