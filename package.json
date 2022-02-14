@@ -8,23 +8,10 @@
   "files": [
     "dist"
   ],
-  "scripts": {
-    "postinstall": "preconstruct dev",
-    "build": "preconstruct build"
-  },
   "dependencies": {
     "@babel/runtime": "^7.16.3",
-    "@babel/core": "^7.16.0",
-    "@babel/plugin-proposal-class-properties": "^7.16.0",
-    "@babel/plugin-proposal-object-rest-spread": "^7.16.0",
-    "@babel/plugin-syntax-dynamic-import": "^7.8.3",
-    "@babel/plugin-transform-runtime": "^7.16.0",
-    "@babel/preset-env": "^7.16.0",
-    "@babel/preset-react": "^7.16.0",
-    "@babel/preset-typescript": "^7.16.0",
     "@keystone-ui/core": "^4.0.0",
-    "@keystone-ui/fields": "^6.0.0",
-    "@preconstruct/cli": "^2.1.5"
+    "@keystone-ui/fields": "^6.0.0"
   },
   "peerDependencies": {
     "@keystone-6/core": ">=^1.0.0",
