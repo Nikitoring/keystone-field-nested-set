@@ -3,28 +3,28 @@
 import { Fragment } from 'react';
 import { jsx, useTheme } from '@keystone-ui/core';
 import { FieldContainer, FieldLabel } from '@keystone-ui/fields';
-// import { Text } from '@keystone-ui/core';
+
 import {
   CardValueComponent,
   CellComponent,
   FieldController,
   FieldControllerConfig,
   FieldProps,
-  // ListMeta
+  ListMeta
 } from '@keystone-6/core/types';
 
-import { useList } from '../../../../admin-ui/context';
-import { Link } from '../../../../admin-ui/router';
-import { CellContainer } from '@keystone-ui/fields';
+import { useList } from '@keystone-6/core/admin-ui/context';
+import Link from 'next/link';
+import { CellContainer } from '@keystone-6/core/admin-ui/components';
 import { RelationshipSelect } from './RelationshipSelect';
 
 export const Field = ({
   field,
   value,
-  onChange,
-  // autoFocus,
-  // forceValidation,
-}: FieldProps<typeof controller>) => {
+  onChange
+}: // autoFocus,
+// forceValidation,
+FieldProps<typeof controller>) => {
   const list = useList(field.listKey);
   return (
     <FieldContainer as="fieldset">
@@ -40,7 +40,7 @@ export const Field = ({
             value,
             onChange(newVal) {
               onChange?.({ ...value, value: newVal });
-            },
+            }
           }}
         />
       </Fragment>
@@ -53,7 +53,7 @@ export const Cell: CellComponent<typeof controller> = ({ field, item }) => {
   const { colors } = useTheme();
 
   const data = item[field.path];
-  const items = (Array.isArray(data) ? data : [data]).filter(item => item);
+  const items = (Array.isArray(data) ? data : [data]).filter((item) => item);
   const displayItems = items.length < 5 ? items : items.slice(0, 3);
   const overflow = items.length < 5 ? 0 : items.length - 3;
   const styles = {
@@ -61,8 +61,8 @@ export const Cell: CellComponent<typeof controller> = ({ field, item }) => {
     textDecoration: 'none',
 
     ':hover': {
-      textDecoration: 'underline',
-    },
+      textDecoration: 'underline'
+    }
   } as const;
 
   return (
@@ -90,22 +90,19 @@ export const CardValue: CardValueComponent<typeof controller> = ({ field }) => {
 
 export type NestedSetValue = {
   id: string | null;
-  initialValue: { label: string; id: string; } | null;
-  value: { label: string; id: string; } | null;
-}
+  initialValue: { label: string; id: string } | null;
+  value: { label: string; id: string } | null;
+};
 
 type NestedSetController = FieldController<NestedSetValue>;
 
-export const controller = (
-  config: FieldControllerConfig): FieldController<NestedSetController> => {
-  console.log('config: ', config);
+export const controller = (config: FieldControllerConfig): FieldController<NestedSetController> => {
   return {
     path: config.path,
     label: config.label,
     listKey: config.listKey,
     defaultValue: { id: null, value: null, initialValue: null },
-    graphqlSelection:
-      `${config.path} {
+    graphqlSelection: `${config.path} {
         parent
         left
         right
@@ -118,10 +115,10 @@ export const controller = (
           parent: value.parent,
           left: value.left,
           right: value.right,
-          depth: value.depth,
-        },
+          depth: value.depth
+        }
       };
     },
-    serialize: value => ({ [config.path]: value }),
+    serialize: (value) => ({ [config.path]: value })
   };
 };

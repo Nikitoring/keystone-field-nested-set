@@ -7,15 +7,15 @@ import { RefObject, useEffect, useMemo, useState, createContext, useContext, use
 import { jsx } from '@keystone-ui/core';
 import { Select, selectComponents } from '@keystone-ui/fields';
 import { validate as validateUUID } from 'uuid';
-import { IdFieldConfig, ListMeta } from '../../../../types';
+import { IdFieldConfig, ListMeta } from '@keystone-6/core/types';
 import {
   ApolloClient,
   gql,
   InMemoryCache,
   TypedDocumentNode,
   useApolloClient,
-  useQuery,
-} from '../../../../admin-ui/apollo';
+  useQuery
+} from '@keystone-6/core/admin-ui/apollo';
 
 function useIntersectionObserver(cb: IntersectionObserverCallback, ref: RefObject<any>) {
   const cbRef = useRef(cb);
@@ -39,7 +39,7 @@ const idValidators = {
   },
   autoincrement(value: string) {
     return /^\d+$/.test(value);
-  },
+  }
 };
 
 function useDebouncedValue<T>(value: T, limitMs: number): T {
@@ -71,8 +71,8 @@ function useFilter(search: string, list: ListMeta) {
           conditions.push({
             [field.path]: {
               contains: trimmedSearch,
-              mode: field.search === 'insensitive' ? 'insensitive' : undefined,
-            },
+              mode: field.search === 'insensitive' ? 'insensitive' : undefined
+            }
           });
         }
       }
@@ -93,7 +93,7 @@ const LoadingIndicatorContext = createContext<{
   ref: (element: HTMLElement | null) => void;
 }>({
   count: 0,
-  ref: () => { },
+  ref: () => {}
 });
 
 export const RelationshipSelect = ({
@@ -117,7 +117,7 @@ export const RelationshipSelect = ({
   state: {
     value: { label: string; id: string; data?: Record<string, any> } | null;
     onChange(value: { label: string; id: string; data: Record<string, any> } | null): void;
-  }
+  };
   field: string;
 }) => {
   const [search, setSearch] = useState('');
@@ -127,7 +127,7 @@ export const RelationshipSelect = ({
   // on the right element
   const [loadingIndicatorElement, setLoadingIndicatorElement] = useState<null | HTMLElement>(null);
   const QUERY: TypedDocumentNode<
-    { items: { [idField]: string;[labelField]: string | null; }[]; count: number },
+    { items: { [idField]: string; [labelField]: string | null }[]; count: number },
     { where: Record<string, any>; take: number; skip: number }
   > = gql`
     query NestedSetSelect($where: ${list.gqlNames.whereInputName}!, $take: Int!, $skip: Int!) {
@@ -168,12 +168,12 @@ export const RelationshipSelect = ({
                       merged[skip + i] = incoming[i];
                     }
                     return merged;
-                  },
-                },
-              },
-            },
-          },
-        }),
+                  }
+                }
+              }
+            }
+          }
+        })
       }),
     [link, list.gqlNames.listQueryName]
   );
@@ -181,7 +181,7 @@ export const RelationshipSelect = ({
   const { data, error, loading, fetchMore } = useQuery(QUERY, {
     fetchPolicy: 'network-only',
     variables: { where, take: initialItemsToLoad, skip: 0 },
-    client: apolloClient,
+    client: apolloClient
   });
 
   const count = data?.count || 0;
@@ -190,12 +190,12 @@ export const RelationshipSelect = ({
     data?.items?.map(({ [idField]: value, [labelField]: label, ...data }) => ({
       value,
       label: label || value,
-      data,
+      data
     })) || [];
   const loadingIndicatorContextVal = useMemo(
     () => ({
       count,
-      ref: setLoadingIndicatorElement,
+      ref: setLoadingIndicatorElement
     }),
     [count]
   );
@@ -216,13 +216,10 @@ export const RelationshipSelect = ({
         skip &&
         isIntersecting &&
         options.length < count &&
-        (
-          lastFetchMore?.where !== where ||
-          lastFetchMore?.list !== list ||
-          lastFetchMore?.skip !== skip)
+        (lastFetchMore?.where !== where || lastFetchMore?.list !== list || lastFetchMore?.skip !== skip)
       ) {
         const QUERY: TypedDocumentNode<
-          { items: { [idField]: string;[labelField]: string | null }[] },
+          { items: { [idField]: string; [labelField]: string | null }[] },
           { where: Record<string, any>; take: number; skip: number }
         > = gql`
               query NestedSetSelectMore($where: ${list.gqlNames.whereInputName}!, $take: Int!, $skip: Int!) {
@@ -238,8 +235,8 @@ export const RelationshipSelect = ({
           variables: {
             where,
             take: subsequentItemsToLoad,
-            skip,
-          },
+            skip
+          }
         })
           .then(() => {
             setLastFetchMore(null);
@@ -264,7 +261,7 @@ export const RelationshipSelect = ({
       <Select
         // this is necessary because react-select passes a second argument to onInputChange
         // and useState setters log a warning if a second argument is passed
-        onInputChange={val => setSearch(val)}
+        onInputChange={(val) => setSearch(val)}
         isLoading={loading || isLoading}
         autoFocus={autoFocus}
         components={relationshipSelectComponents}
@@ -272,20 +269,21 @@ export const RelationshipSelect = ({
         value={
           state.value
             ? {
-              value: state.value.id,
-              label: state.value.label,
-              // @ts-ignore
-              data: state.value.data,
-            }
-            : null}
+                value: state.value.id,
+                label: state.value.label,
+                // @ts-ignore
+                data: state.value.data
+              }
+            : null
+        }
         options={options}
-        onChange={value => {
+        onChange={(value) => {
           state.onChange(
             value
               ? {
                   id: value.value,
                   label: value.label,
-                  data: (value as any).data,
+                  data: (value as any).data
                 }
               : null
           );
@@ -310,5 +308,5 @@ const relationshipSelectComponents: Partial<typeof selectComponents> = {
         </div>
       </selectComponents.MenuList>
     );
-  },
+  }
 };

@@ -26,8 +26,7 @@ import {
 } from './utils';
 
 import { Path } from 'graphql/jsutils/Path';
-// const views = path.join(path.dirname(__dirname), 'views');
-const views = require.resolve('./views');
+const views = path.join(path.dirname(__dirname), 'views');
 // console.log('views', views);
 
 type SelectDisplayConfig = {
@@ -282,7 +281,7 @@ export const nestedSet =
           return { ...value };
         }
       }),
-      views: require.resolve('./views')
+      views
       // unreferencedConcreteInterfaceImplementaetions: [NestedSetFieldOutput]
     });
   };
