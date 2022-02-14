@@ -1,0 +1,4 @@
+{
+  "main": "dist/keystone-field-nested-set.cjs.js",
+  "module": "dist/keystone-field-nested-set.esm.js"
+}
