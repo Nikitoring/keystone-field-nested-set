@@ -1,10 +1,11 @@
 {
   "name": "keystone-field-nested-set",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "nested set field to keystonejs",
   "main": "dist/keystone-field-nested-set.cjs.js",
   "module": "dist/keystone-field-nested-set.esm.js",
-  "private": true,
+  "license": "MIT",
+  "private": false,
   "files": [
     "dist"
   ],
