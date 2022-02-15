@@ -1,6 +1,6 @@
 {
   "name": "keystone-field-nested-set",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "nested set field for keystonejs",
   "main": "dist/keystone-field-nested-set.cjs.js",
   "module": "dist/keystone-field-nested-set.esm.js",
@@ -13,6 +13,8 @@
     "@babel/runtime": "^7.16.3",
     "@keystone-ui/core": "^4.0.0",
     "@keystone-ui/fields": "^6.0.0",
+    "@preconstruct/cli": "^2.1.5",
+    "@preconstruct/next": "^3.0.1",
     "graphql-upload": "^12.0.0"
   },
   "peerDependencies": {
