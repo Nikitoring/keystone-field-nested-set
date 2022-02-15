@@ -1,19 +1,19 @@
 {
   "name": "keystone-field-nested-set",
-  "version": "0.0.3",
-  "description": "nested set field to keystonejs",
+  "version": "0.0.1",
+  "description": "nested set field for keystonejs",
   "main": "dist/keystone-field-nested-set.cjs.js",
   "module": "dist/keystone-field-nested-set.esm.js",
   "license": "MIT",
-  "private": false,
   "files": [
-    "dist"
+    "dist",
+    "views"
   ],
   "dependencies": {
     "@babel/runtime": "^7.16.3",
     "@keystone-ui/core": "^4.0.0",
     "@keystone-ui/fields": "^6.0.0",
-    "@preconstruct/cli": "^2.1.5"
+    "graphql-upload": "^12.0.0"
   },
   "peerDependencies": {
     "@keystone-6/core": ">=^1.0.0",
@@ -30,7 +30,8 @@
   },
   "preconstruct": {
     "entrypoints": [
-      "index.ts"
+      "index.ts",
+      "views/index.tsx"
     ]
   },
   "repository": "https://github.com/Nikitoring/keystone-field-nested-set"
