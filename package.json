@@ -1,15 +1,20 @@
 {
   "name": "keystone-field-nested-set",
-  "version": "0.0.8",
+  "version": "0.0.11",
   "description": "nested set field for keystonejs",
   "main": "dist/keystone-field-nested-set.cjs.js",
   "module": "dist/keystone-field-nested-set.esm.js",
   "license": "MIT",
   "scripts": {
-    "postinstall": "preconstruct dev",
     "format": "prettier --write \"**/*.js{,on}\" \"**/*.md\"",
     "build": "preconstruct build",
-    "release": "yarn build && npm publish"
+    "release": "yarn build && yarn publish"
+  },
+  "preconstruct": {
+    "entrypoints": [
+      "index.ts",
+      "views/index.tsx"
+    ]
   },
   "dependencies": {
     "@babel/core": "^7.16.0",
@@ -21,15 +26,21 @@
     "@babel/preset-react": "^7.16.0",
     "@babel/preset-typescript": "^7.16.0",
     "@babel/runtime": "^7.16.3",
-    "@keystone-6/core": ">=^1.0.0",
+    "@keystone-6/core": "^1.0.0",
     "@keystone-ui/core": "^4.0.0",
     "@keystone-ui/fields": "^6.0.0",
+    "@manypkg/cli": "0.18.0",
     "@preconstruct/cli": "^2.1.5",
     "@types/react": "^17.0.35",
+    "apollo-server-micro": "^3.5.0",
     "graphql": "^15.7.2",
+    "graphql-tag": "^2.12.5",
+    "intersection-observer": "^0.12.0",
+    "next": "^12.0.4",
     "prettier": "^2.4.1",
     "react": "^17.0.2",
-    "typescript": "^4.4.4"
+    "typescript": "^4.4.4",
+    "uuid": "^8.3.2"
   },
   "prettier": {
     "proseWrap": "preserve",
@@ -38,17 +49,8 @@
     "printWidth": 100,
     "arrowParens": "avoid"
   },
-  "peerDependencies": {
-    "@keystone-6/core": ">=^1.0.0",
-    "react": "^17.0.2"
-  },
   "engines": {
     "node": "^12.20 || >= 14.13"
-  },
-  "preconstruct": {
-    "entrypoints": [
-      "index.ts"
-    ]
   },
   "repository": "https://github.com/Nikitoring/keystone-field-nested-set"
 }

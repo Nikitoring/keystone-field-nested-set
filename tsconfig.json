@@ -15,5 +15,6 @@
     "types": ["@types/jest"],
     "typeRoots": []
   },
+  "include": ["**/*"],
   "exclude": ["**/node_modules/**/*"]
 }
