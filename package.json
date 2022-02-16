@@ -1,11 +1,10 @@
 {
   "name": "keystone-field-nested-set",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "nested set field for keystonejs",
   "main": "dist/keystone-field-nested-set.cjs.js",
   "module": "dist/keystone-field-nested-set.esm.js",
   "license": "MIT",
-  "private": true,
   "scripts": {
     "postinstall": "preconstruct dev",
     "format": "prettier --write \"**/*.js{,on}\" \"**/*.md\"",
@@ -51,9 +50,7 @@
     "node": "^12.20 || >= 14.13"
   },
   "preconstruct": {
-    "packages": [
-
-    ],
+    "packages": [],
     "entrypoints": [
       "index.ts"
     ]
