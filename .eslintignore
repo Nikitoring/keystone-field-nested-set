@@ -1,0 +1,8 @@
+node_modules
+coverage
+dist
+reports
+test-projects/**/cypress
+website/.cache/**/*
+website/public/**/*
+packages/create-keystone-app/templates
