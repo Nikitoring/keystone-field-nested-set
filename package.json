@@ -1,26 +1,15 @@
 {
   "name": "keystone-field-nested-set",
-  "version": "0.0.1",
+  "version": "0.0.6",
   "description": "nested set field for keystonejs",
   "main": "dist/keystone-field-nested-set.cjs.js",
   "module": "dist/keystone-field-nested-set.esm.js",
   "license": "MIT",
+  "private": true,
   "files": [
     "dist",
     "views"
   ],
-  "scripts": {
-    "postinstall": "preconstruct dev && manypkg check",
-    "format:file": "prettier --write",
-    "format": "prettier --write \"**/*.js{,on}\" \"**/*.md\"",
-    "fresh": "yarn clean && yarn",
-    "clean": "rimraf \"**/cypress/{screenshots,videos,reports}\" \"**/node_modules\" \"**/yarn-error.log\" \"**/out.log\" \"**/.DS_Store\" \"**/dist\"",
-    "postinstall-examples": "for d in `find examples -type d -maxdepth 1 -mindepth 1`; do echo $d; cd $d; yarn keystone postinstall --fix; cd ../..; done",
-    "build": "preconstruct build",
-    "changeset": "changeset",
-    "version-packages": "changeset version",
-    "publish-changed": "yarn build && yarn changeset publish"
-  },
   "dependencies": {
     "@babel/core": "^7.16.0",
     "@babel/plugin-proposal-class-properties": "^7.16.0",
@@ -32,13 +21,13 @@
     "@babel/preset-typescript": "^7.16.0",
     "@babel/runtime": "^7.16.3",
     "@changesets/cli": "^2.18.1",
-    "@keystone-6/core": "^1.0.0",
+    "@keystone-6/core": ">=^1.0.0",
+    "@keystone-ui/core": "^4.0.0",
+    "@keystone-ui/fields": "^6.0.0",
     "@manypkg/cli": "0.18.0",
     "@preconstruct/cli": "^2.1.5",
     "@types/jest": "^27.0.2",
     "@types/react": "^17.0.35",
-    "cross-env": "^7.0.3",
-    "dotenv": "^10.0.0",
     "graphql": "^15.7.2",
     "prettier": "^2.4.1",
     "react": "^17.0.2",
@@ -62,7 +51,7 @@
   "preconstruct": {
     "entrypoints": [
       "index.ts",
-      "views"
+      "views/index.tsx"
     ],
     "distFilenameStrategy": "unscoped-package-name"
   },

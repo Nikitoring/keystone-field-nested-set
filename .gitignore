@@ -7,5 +7,6 @@ example/
 .idea/
 .vscode/
 .nyc_output/
+.changeset/
 package-lock.json
 yarn.lock
