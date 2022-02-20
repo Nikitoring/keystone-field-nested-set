@@ -1,6 +1,6 @@
 /** @jsxRuntime classic */
 /** @jsx jsx */
-import { Fragment } from 'react';
+// import { Fragment } from 'react';
 import { jsx, useTheme } from '@keystone-ui/core';
 import { FieldContainer, FieldLabel } from '@keystone-ui/fields';
 
@@ -10,115 +10,89 @@ import {
   FieldController,
   FieldControllerConfig,
   FieldProps,
-  ListMeta
+  ListMeta,
 } from '@keystone-6/core/types';
 
-import { useList } from '@keystone-6/core/admin-ui/context';
-import Link from 'next/link';
-import { CellContainer } from '@keystone-6/core/admin-ui/components';
-import { RelationshipSelect } from './RelationshipSelect';
+import { useKeystone, useList } from '@keystone-6/core/admin-ui/context';
 
-export const Field = ({
-  field,
-  value,
-  onChange
-}: // autoFocus,
-// forceValidation,
-FieldProps<typeof controller>) => {
-  const list = useList(field.listKey);
-  return (
-    <FieldContainer as="fieldset">
-      <Fragment>
-        <FieldLabel htmlFor={field.path}>{field.label}</FieldLabel>
-        <RelationshipSelect
-          controlShouldRenderValue
-          list={list}
-          isLoading={false}
-          field={field.path}
-          isDisabled={onChange === undefined}
-          state={{
-            value,
-            onChange(newVal) {
-              onChange?.({ ...value, value: newVal });
-            }
-          }}
-        />
-      </Fragment>
-    </FieldContainer>
-  );
+import { CellLink, CellContainer } from '@keystone-6/core/admin-ui/components';
+
+import { NestedSetInput } from './NestedSetInput';
+
+export const Cell: CellComponent = ({ item, field, linkTo }) => {
+  let value = item[field.path] + '';
+  return linkTo ? <CellLink {...linkTo}>{value}</CellLink> : <CellContainer>{value}</CellContainer>;
 };
+Cell.supportsLinkTo = true;
 
-export const Cell: CellComponent<typeof controller> = ({ field, item }) => {
-  const list = useList(field.listKey);
-  const { colors } = useTheme();
-
-  const data = item[field.path];
-  const items = (Array.isArray(data) ? data : [data]).filter((item) => item);
-  const displayItems = items.length < 5 ? items : items.slice(0, 3);
-  const overflow = items.length < 5 ? 0 : items.length - 3;
-  const styles = {
-    color: colors.foreground,
-    textDecoration: 'none',
-
-    ':hover': {
-      textDecoration: 'underline'
-    }
-  } as const;
-
-  return (
-    <CellContainer>
-      {displayItems.map((item, index) => (
-        <Fragment key={item.id}>
-          {!!index ? ', ' : ''}
-          <Link href={`/${list.path}/[id]`} as={`/${list.path}/${item.id}`} css={styles}>
-            {item.label || item.id}
-          </Link>
-        </Fragment>
-      ))}
-      {overflow ? `, and ${overflow} more` : null}
-    </CellContainer>
-  );
-};
-
-export const CardValue: CardValueComponent<typeof controller> = ({ field }) => {
+export const CardValue: CardValueComponent = ({ item, field }) => {
   return (
     <FieldContainer>
       <FieldLabel>{field.label}</FieldLabel>
+      {item[field.path]}
     </FieldContainer>
   );
 };
 
-export type NestedSetValue = {
-  id: string | null;
+export const Field = ({ field, value, onChange, autoFocus }: FieldProps<typeof controller>) => {
+  const foreignList = useList(field.refListKey);
+  return (
+    <FieldContainer>
+      <FieldLabel htmlFor={field.path}>{field.label}</FieldLabel>
+      {/* {field.refListKey} */}
+      <NestedSetInput list={foreignList} onChange={onChange} state={value} autoFocus={autoFocus} />
+    </FieldContainer>
+  );
+};
+
+type NestedSetData = {
+  kind: 'one';
   initialValue: { label: string; id: string } | null;
   value: { label: string; id: string } | null;
 };
 
-type NestedSetController = FieldController<NestedSetValue>;
+export type NestedSetValue = null | NestedSetData;
 
-export const controller = (config: FieldControllerConfig): FieldController<NestedSetController> => {
+type NestedSetController = FieldController<NestedSetValue> & {
+  listkey: string;
+  labelField: string;
+  displayMode: 'select';
+};
+
+export const controller = (
+  config: FieldControllerConfig<{
+    listkey: string;
+    labelField: string;
+    displayMode: string;
+  }>
+): NestedSetController => {
   return {
     path: config.path,
     label: config.label,
     listKey: config.listKey,
-    defaultValue: { id: null, value: null, initialValue: null },
-    graphqlSelection: `${config.path} {
-        parent
-        left
-        right
-        depth
-    }`,
-    deserialize(item) {
-      const value = item[config.path];
-      return {
-        data: {
-          parent: value.parent,
-          left: value.left,
-          right: value.right,
-          depth: value.depth
-        }
-      };
+    refListKey: config.fieldMeta.listKey,
+    display: {
+      mode: 'select',
+      refLabelField: config.fieldMeta.labelField,
     },
-    serialize: (value) => ({ [config.path]: value })
+    graphqlSelection: `${config.path} {
+      left,
+      right,
+      depth,
+      parentId
+    }`,
+    deserialize: data => {
+      return data[config.path];
+    },
+    serialize: value => {
+      if (value && !value.value || !value?.initialValue) {
+        return {
+          [config.path]: {
+            ...value
+          }
+        }
+      }
+      return value
+    }
   };
 };

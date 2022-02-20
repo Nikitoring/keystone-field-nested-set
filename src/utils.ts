@@ -562,7 +562,7 @@ async function updateNode(
     left += treeSize;
     right += treeSize;
   }
-  const childeTree = await context.prisma[bdTable].findMany({
+  const childrenTree = await context.prisma[bdTable].findMany({
     where: {
       [`${fieldKey}_left`]: {
         gt: left
@@ -579,7 +579,7 @@ async function updateNode(
     }
   });
   const transactions = [];
-  for (const child of childeTree) {
+  for (const child of childrenTree) {
     transactions.push(
       context.prisma[bdTable].update({
         where: {
@@ -673,6 +673,6 @@ async function shiftLeftRightRange(first: number, last: number, increment: numbe
       })
     );
   }
-  await context.prisma.$transaction(transactions);
-  return;
+  
+  return await context.prisma.$transaction(transactions);
 }

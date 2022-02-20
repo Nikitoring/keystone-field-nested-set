@@ -6,7 +6,7 @@ import {
   fieldType,
   AdminMetaRootVal,
   KeystoneContext,
-  orderDirectionEnum
+  orderDirectionEnum,
 } from '@keystone-6/core/types';
 import { graphql } from '@keystone-6/core';
 import {
@@ -27,8 +27,7 @@ import {
 } from './utils';
 
 import { Path } from 'graphql/jsutils/Path';
-const views = path.join(path.dirname(__dirname), 'scr/views');
-// console.log('views', views);
+const views = path.join(path.dirname(__dirname), 'views');
 
 type SelectDisplayConfig = {
   ui?: {
@@ -168,7 +167,7 @@ async function filterResolver(
 }
 
 export type NestedSetConfig<ListTypeInfo extends BaseListTypeInfo> =
-  CommonFieldConfig<ListTypeInfo> & {} & SelectDisplayConfig;
+  CommonFieldConfig<ListTypeInfo> & { defaultValue?: { [key: string]: any }} & SelectDisplayConfig;
 
 export const nestedSet =
   <ListTypeInfo extends BaseListTypeInfo>({
@@ -177,19 +176,19 @@ export const nestedSet =
   (meta) => {
     const listTypes = meta.lists[meta.listKey].types;
     const commonConfig = {
-      ...config
-      // isIndexed: 'unique'
-      // getAdminMeta: (
-      //   adminMetaRoot: AdminMetaRootVal
-      // ): Parameters<typeof import('./views').controller>[0]['fieldMeta'] => {
-      //   if (!listTypes) {
-      //     throw new Error(`The ref [${listTypes}] on relationship [${meta.listKey}.${meta.fieldKey}] is invalid`);
-      //   }
-      //   return {
-      //     listKey: meta.listKey,
-      //     labelField: adminMetaRoot.listsByKey[meta.listKey].labelField
-      //   };
-      // }
+      ...config,
+      isIndexed: 'unique',
+      getAdminMeta: (
+        adminMetaRoot: AdminMetaRootVal
+      ): Parameters<typeof import('./views').controller>[0]['fieldMeta'] => {
+        if (!listTypes) {
+          throw new Error(`The ref [${listTypes}] on relationship [${meta.listKey}.${meta.fieldKey}] is invalid`);
+        }
+        return {
+          listKey: meta.listKey,
+          labelField: adminMetaRoot.listsByKey[meta.listKey].labelField
+        };
+      }
     };
     return fieldType({
       kind: 'multi',
@@ -282,7 +281,7 @@ export const nestedSet =
           return { ...value };
         }
       }),
-      views
-      // unreferencedConcreteInterfaceImplementaetions: [NestedSetFieldOutput]
+      views,
+      unreferencedConcreteInterfaceImplementaetions: [NestedSetFieldOutput]
     });
   };

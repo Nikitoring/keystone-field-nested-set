@@ -5,42 +5,59 @@ import 'intersection-observer';
 import { RefObject, useEffect, useMemo, useState, createContext, useContext, useRef } from 'react';
 
 import { jsx } from '@keystone-ui/core';
-import { Select, selectComponents } from '@keystone-ui/fields';
-import { validate as validateUUID } from 'uuid';
-import { IdFieldConfig, ListMeta } from '@keystone-6/core/types';
+import { Select, selectComponents, Radio } from '@keystone-ui/fields';
+import { ListMeta } from '@keystone-6/core/types';
 import {
   ApolloClient,
   gql,
   InMemoryCache,
   TypedDocumentNode,
   useApolloClient,
-  useQuery
+  useQuery,
 } from '@keystone-6/core/admin-ui/apollo';
 
+const idField = '____id____';
+
+const labelField = '____label____';
+
+const LoadingIndicatorContext = createContext<{
+  count: number;
+  ref: (element: HTMLElement | null) => void;
+}>({
+  count: 0,
+  ref: () => {},
+});
+
+function useFilter(search: string, list: ListMeta) {
+  return useMemo(() => {
+    let conditions: Record<string, any>[] = [];
+    if (search.length) {
+      const trimmedSearch = search.trim();
+      for (const field of Object.values(list.fields)) {
+        if (field.search !== null) {
+          conditions.push({
+            [field.path]: {
+              contains: trimmedSearch,
+              mode: field.search === 'insensitive' ? 'insensitive' : undefined,
+            },
+          });
+        }
+      }
+    }
+    return { OR: conditions };
+  }, [search, list]);
+}
+
 function useIntersectionObserver(cb: IntersectionObserverCallback, ref: RefObject<any>) {
-  const cbRef = useRef(cb);
   useEffect(() => {
-    cbRef.current = cb;
-  });
-  useEffect(() => {
-    let observer = new IntersectionObserver((...args) => cbRef.current(...args), {});
+    let observer = new IntersectionObserver(cb, {});
     let node = ref.current;
     if (node !== null) {
       observer.observe(node);
       return () => observer.unobserve(node);
     }
-  }, [ref]);
+  });
 }
-
-const idValidators = {
-  uuid: validateUUID,
-  cuid(value: string) {
-    return value.startsWith('c');
-  },
-  autoincrement(value: string) {
-    return /^\d+$/.test(value);
-  }
-};
 
 function useDebouncedValue<T>(value: T, limitMs: number): T {
   const [debouncedValue, setDebouncedValue] = useState(() => value);
@@ -56,75 +73,34 @@ function useDebouncedValue<T>(value: T, limitMs: number): T {
   return debouncedValue;
 }
 
-function useFilter(search: string, list: ListMeta) {
-  return useMemo(() => {
-    let conditions: Record<string, any>[] = [];
-    if (search.length) {
-      const idFieldKind: IdFieldConfig['kind'] = (list.fields.id.controller as any).idFieldKind;
-      const trimmedSearch = search.trim();
-      const isValidId = idValidators[idFieldKind](trimmedSearch);
-      if (isValidId) {
-        conditions.push({ id: { equals: trimmedSearch } });
-      }
-      for (const field of Object.values(list.fields)) {
-        if (field.search !== null) {
-          conditions.push({
-            [field.path]: {
-              contains: trimmedSearch,
-              mode: field.search === 'insensitive' ? 'insensitive' : undefined
-            }
-          });
-        }
-      }
-    }
-    return { OR: conditions };
-  }, [search, list]);
-}
-
 const initialItemsToLoad = 10;
 const subsequentItemsToLoad = 50;
 
-const idField = '____id____';
-
-const labelField = '____label____';
-
-const LoadingIndicatorContext = createContext<{
-  count: number;
-  ref: (element: HTMLElement | null) => void;
-}>({
-  count: 0,
-  ref: () => {}
-});
-
-export const RelationshipSelect = ({
+export const NestedSetInput = ({
   autoFocus,
-  controlShouldRenderValue,
   isDisabled,
   isLoading,
   list,
-  placeholder,
-  portalMenu,
   state,
-  field
+  field,
+  onChange,
 }: {
   autoFocus?: boolean;
   controlShouldRenderValue: boolean;
   isDisabled: boolean;
   isLoading?: boolean;
   list: ListMeta;
-  placeholder?: string;
-  portalMenu?: true | undefined;
+  onChange: void;
   state: {
-    value: { label: string; id: string; data?: Record<string, any> } | null;
-    onChange(value: { label: string; id: string; data: Record<string, any> } | null): void;
+    left: number;
+    right: number;
+    depth: number;
+    parentId: string;
   };
   field: string;
 }) => {
   const [search, setSearch] = useState('');
-  // note it's important that this is in state rather than a ref
-  // because we want a re-render if the element changes
-  // so that we can register the intersection observer
-  // on the right element
+  const [variant, setVariant] = useState('');
   const [loadingIndicatorElement, setLoadingIndicatorElement] = useState<null | HTMLElement>(null);
   const QUERY: TypedDocumentNode<
     { items: { [idField]: string; [labelField]: string | null }[]; count: number },
@@ -134,12 +110,6 @@ export const RelationshipSelect = ({
       items: ${list.gqlNames.listQueryName}(where: $where, take: $take, skip: $skip) {
         ${idField}: id
         ${labelField}: ${list.labelField}
-        ${field} {
-          parent
-          left
-          right
-          depth
-        }
       }
       count: ${list.gqlNames.listQueryCountName}(where: $where)
     }
@@ -149,8 +119,6 @@ export const RelationshipSelect = ({
   const where = useFilter(debouncedSearch, list);
 
   const link = useApolloClient().link;
-  // we're using a local apollo client here because writing a global implementation of the typePolicies
-  // would require making assumptions about how pagination should work which won't always be right
   const apolloClient = useMemo(
     () =>
       new ApolloClient({
@@ -168,12 +136,12 @@ export const RelationshipSelect = ({
                       merged[skip + i] = incoming[i];
                     }
                     return merged;
-                  }
-                }
-              }
-            }
-          }
-        })
+                  },
+                },
+              },
+            },
+          },
+        }),
       }),
     [link, list.gqlNames.listQueryName]
   );
@@ -181,7 +149,7 @@ export const RelationshipSelect = ({
   const { data, error, loading, fetchMore } = useQuery(QUERY, {
     fetchPolicy: 'network-only',
     variables: { where, take: initialItemsToLoad, skip: 0 },
-    client: apolloClient
+    client: apolloClient,
   });
 
   const count = data?.count || 0;
@@ -190,18 +158,21 @@ export const RelationshipSelect = ({
     data?.items?.map(({ [idField]: value, [labelField]: label, ...data }) => ({
       value,
       label: label || value,
-      data
+      data,
     })) || [];
+
+  // if parentId get this entity
+  let value: { [key: string]: any } = {};
+  if (state?.parentId) {
+    value = options.find(option => option.value === state?.parentId)
+  }
   const loadingIndicatorContextVal = useMemo(
     () => ({
       count,
-      ref: setLoadingIndicatorElement
+      ref: setLoadingIndicatorElement,
     }),
     [count]
   );
-
-  // we want to avoid fetching more again and `loading` from Apollo
-  // doesn't seem to become true when fetching more
   const [lastFetchMore, setLastFetchMore] = useState<{
     where: Record<string, any>;
     list: ListMeta;
@@ -216,7 +187,9 @@ export const RelationshipSelect = ({
         skip &&
         isIntersecting &&
         options.length < count &&
-        (lastFetchMore?.where !== where || lastFetchMore?.list !== list || lastFetchMore?.skip !== skip)
+        (lastFetchMore?.where !== where ||
+          lastFetchMore?.list !== list ||
+          lastFetchMore?.skip !== skip)
       ) {
         const QUERY: TypedDocumentNode<
           { items: { [idField]: string; [labelField]: string | null }[] },
@@ -235,8 +208,8 @@ export const RelationshipSelect = ({
           variables: {
             where,
             take: subsequentItemsToLoad,
-            skip
-          }
+            skip,
+          },
         })
           .then(() => {
             setLastFetchMore(null);
@@ -248,52 +221,101 @@ export const RelationshipSelect = ({
     },
     { current: loadingIndicatorElement }
   );
-
-  // TODO: better error UI
-  // TODO: Handle permission errors
-  // (ie; user has permission to read this relationship field, but
-  // not the related list, or some items on the list)
   if (error) {
     return <span>Error</span>;
   }
+  const radioVariants = [
+    {
+      label: 'Parent',
+      value: 'parenId',
+      checked: true,
+    },
+    {
+      label: 'Before',
+      value: 'prevSiblingOf',
+    },
+    {
+      label: 'After',
+      value: 'nextSiblingOf',
+    },
+  ];
+  const radioClass = {
+    display: 'flex',
+    marginTop: '1rem',
+    flexDirection: 'column',
+  };
+  const setPosition = e => {
+    setVariant(e.target.value);
+  };
+  const container = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'no-wrap',
+  };
+  const selectWidth = {
+    width: '80%',
+  };
+  const radioButton = {
+    marginBottom: '1rem',
+  };
+  const prepareData = (value: { [key: string]: any }) => {
+    if (value) {
+      if (variant === '') {
+        onChange({ parentId: value.value });
+        return;
+      }
+      switch (variant) {
+        case 'parentId':
+          onChange({ parentId: value.value });
+          return;
+        case 'prevSiblingOf':
+          onChange({ prevSiblingOf: value.value });
+          return;
+        case 'prevSiblingOf':
+          onChange({ nextSiblingOf: value.value });
+          return;
+      }
+    }
+  };
   return (
-    <LoadingIndicatorContext.Provider value={loadingIndicatorContextVal}>
-      <Select
-        // this is necessary because react-select passes a second argument to onInputChange
-        // and useState setters log a warning if a second argument is passed
-        onInputChange={(val) => setSearch(val)}
-        isLoading={loading || isLoading}
-        autoFocus={autoFocus}
-        components={relationshipSelectComponents}
-        portalMenu={portalMenu}
-        value={
-          state.value
-            ? {
-                value: state.value.id,
-                label: state.value.label,
-                // @ts-ignore
-                data: state.value.data
-              }
-            : null
-        }
-        options={options}
-        onChange={(value) => {
-          state.onChange(
-            value
-              ? {
-                  id: value.value,
-                  label: value.label,
-                  data: (value as any).data
-                }
-              : null
-          );
-        }}
-        placeholder={placeholder}
-        controlShouldRenderValue={controlShouldRenderValue}
-        isClearable={controlShouldRenderValue}
-        isDisabled={isDisabled}
-      />
-    </LoadingIndicatorContext.Provider>
+    <div style={container}>
+      <div style={selectWidth}>
+        <LoadingIndicatorContext.Provider value={loadingIndicatorContextVal}>
+          <Select
+            // this is necessary because react-select passes a second argument to onInputChange
+            // and useState setters log a warning if a second argument is passed
+            onInputChange={val => setSearch(val)}
+            isLoading={loading || isLoading}
+            autoFocus={autoFocus}
+            components={relationshipSelectComponents}
+            value={value ? value : null}
+            options={options}
+            onChange={value => {
+              prepareData(value);
+            }}
+            isDisabled={isDisabled}
+          />
+        </LoadingIndicatorContext.Provider>
+      </div>
+      <div style={radioClass}>
+        {radioVariants.map((variant, index) => (
+          <div style={radioButton} key={variant.value}>
+            <Radio
+              name="position"
+              size="medium"
+              key={variant.value}
+              defaultChecked={index === 0}
+              className="radioClass"
+              value={variant.value}
+              onChange={value => setPosition(value)}
+            >
+              {variant.label}
+            </Radio>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 };
 
@@ -308,5 +330,5 @@ const relationshipSelectComponents: Partial<typeof selectComponents> = {
         </div>
       </selectComponents.MenuList>
     );
-  }
+  },
 };
