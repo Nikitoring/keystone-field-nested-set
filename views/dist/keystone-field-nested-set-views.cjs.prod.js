@@ -3,84 +3,30 @@
 Object.defineProperty(exports, '__esModule', { value: true });
 
 var _objectSpread = require('@babel/runtime/helpers/objectSpread2');
-var react = require('react');
 var core = require('@keystone-ui/core');
 var fields = require('@keystone-ui/fields');
 var context = require('@keystone-6/core/admin-ui/context');
-var Link = require('next/link');
 var components = require('@keystone-6/core/admin-ui/components');
 var _objectWithoutProperties = require('@babel/runtime/helpers/objectWithoutProperties');
 var _toPropertyKey = require('@babel/runtime/helpers/toPropertyKey');
 require('intersection-observer');
-var uuid = require('uuid');
+var react = require('react');
 var apollo = require('@keystone-6/core/admin-ui/apollo');
 
-function _interopDefault (e) { return e && e.__esModule ? e : { 'default': e }; }
-
-var Link__default = /*#__PURE__*/_interopDefault(Link);
-
 const _excluded = ["children"];
-
-function useIntersectionObserver(cb, ref) {
-  const cbRef = react.useRef(cb);
-  react.useEffect(() => {
-    cbRef.current = cb;
-  });
-  react.useEffect(() => {
-    let observer = new IntersectionObserver(function () {
-      return cbRef.current(...arguments);
-    }, {});
-    let node = ref.current;
-
-    if (node !== null) {
-      observer.observe(node);
-      return () => observer.unobserve(node);
-    }
-  }, [ref]);
-}
-
-const idValidators = {
-  uuid: uuid.validate,
-
-  cuid(value) {
-    return value.startsWith('c');
-  },
-
-  autoincrement(value) {
-    return /^\d+$/.test(value);
-  }
-
-};
-
-function useDebouncedValue(value, limitMs) {
-  const [debouncedValue, setDebouncedValue] = react.useState(() => value);
-  react.useEffect(() => {
-    let id = setTimeout(() => {
-      setDebouncedValue(() => value);
-    }, limitMs);
-    return () => {
-      clearTimeout(id);
-    };
-  }, [value, limitMs]);
-  return debouncedValue;
-}
+const idField = '____id____';
+const labelField = '____label____';
+const LoadingIndicatorContext = /*#__PURE__*/react.createContext({
+  count: 0,
+  ref: () => {}
+});
 
 function useFilter(search, list) {
   return react.useMemo(() => {
     let conditions = [];
 
     if (search.length) {
-      const idFieldKind = list.fields.id.controller.idFieldKind;
       const trimmedSearch = search.trim();
-      const isValidId = idValidators[idFieldKind](trimmedSearch);
-
-      if (isValidId) {
-        conditions.push({
-          id: {
-            equals: trimmedSearch
-          }
-        });
-      }
 
       for (const field of Object.values(list.fields)) {
         if (field.search !== null) {
@@ -100,54 +46,60 @@ function useFilter(search, list) {
   }, [search, list]);
 }
 
+function useIntersectionObserver(cb, ref) {
+  react.useEffect(() => {
+    let observer = new IntersectionObserver(cb, {});
+    let node = ref.current;
+
+    if (node !== null) {
+      observer.observe(node);
+      return () => observer.unobserve(node);
+    }
+  });
+}
+
+function useDebouncedValue(value, limitMs) {
+  const [debouncedValue, setDebouncedValue] = react.useState(() => value);
+  react.useEffect(() => {
+    let id = setTimeout(() => {
+      setDebouncedValue(() => value);
+    }, limitMs);
+    return () => {
+      clearTimeout(id);
+    };
+  }, [value, limitMs]);
+  return debouncedValue;
+}
+
 const initialItemsToLoad = 10;
 const subsequentItemsToLoad = 50;
-const idField = '____id____';
-const labelField = '____label____';
-const LoadingIndicatorContext = /*#__PURE__*/react.createContext({
-  count: 0,
-  ref: () => {}
-});
-const RelationshipSelect = _ref => {
+const NestedSetInput = _ref => {
   var _data$items;
 
   let {
     autoFocus,
-    controlShouldRenderValue,
     isDisabled,
     isLoading,
     list,
-    placeholder,
-    portalMenu,
     state,
-    field
+    field,
+    onChange
   } = _ref;
-  const [search, setSearch] = react.useState(''); // note it's important that this is in state rather than a ref
-  // because we want a re-render if the element changes
-  // so that we can register the intersection observer
-  // on the right element
-
+  const [search, setSearch] = react.useState('');
+  const [variant, setVariant] = react.useState('');
   const [loadingIndicatorElement, setLoadingIndicatorElement] = react.useState(null);
   const QUERY = apollo.gql`
     query NestedSetSelect($where: ${list.gqlNames.whereInputName}!, $take: Int!, $skip: Int!) {
       items: ${list.gqlNames.listQueryName}(where: $where, take: $take, skip: $skip) {
         ${idField}: id
         ${labelField}: ${list.labelField}
-        ${field} {
-          parent
-          left
-          right
-          depth
-        }
       }
       count: ${list.gqlNames.listQueryCountName}(where: $where)
     }
   `;
   const debouncedSearch = useDebouncedValue(search, 200);
   const where = useFilter(debouncedSearch, list);
-  const link = apollo.useApolloClient().link; // we're using a local apollo client here because writing a global implementation of the typePolicies
-  // would require making assumptions about how pagination should work which won't always be right
-
+  const link = apollo.useApolloClient().link;
   const apolloClient = react.useMemo(() => new apollo.ApolloClient({
     link,
     cache: new apollo.InMemoryCache({
@@ -204,13 +156,18 @@ const RelationshipSelect = _ref => {
       label: label || value,
       data
     };
-  })) || [];
+  })) || []; // if parentId get this entity
+
+  let value = {};
+
+  if (state !== null && state !== void 0 && state.parentId) {
+    value = options.find(option => option.value === (state === null || state === void 0 ? void 0 : state.parentId));
+  }
+
   const loadingIndicatorContextVal = react.useMemo(() => ({
     count,
     ref: setLoadingIndicatorElement
-  }), [count]); // we want to avoid fetching more again and `loading` from Apollo
-  // doesn't seem to become true when fetching more
-
+  }), [count]);
   const [lastFetchMore, setLastFetchMore] = react.useState(null);
   useIntersectionObserver(_ref4 => {
     let [{
@@ -247,16 +204,82 @@ const RelationshipSelect = _ref => {
     }
   }, {
     current: loadingIndicatorElement
-  }); // TODO: better error UI
-  // TODO: Handle permission errors
-  // (ie; user has permission to read this relationship field, but
-  // not the related list, or some items on the list)
+  });
 
   if (error) {
     return core.jsx("span", null, "Error");
   }
 
-  return core.jsx(LoadingIndicatorContext.Provider, {
+  const radioVariants = [{
+    label: 'Parent',
+    value: 'parenId',
+    checked: true
+  }, {
+    label: 'Before',
+    value: 'prevSiblingOf'
+  }, {
+    label: 'After',
+    value: 'nextSiblingOf'
+  }];
+  const radioClass = {
+    display: 'flex',
+    marginTop: '1rem',
+    flexDirection: 'column'
+  };
+
+  const setPosition = e => {
+    setVariant(e.target.value);
+  };
+
+  const container = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'no-wrap'
+  };
+  const selectWidth = {
+    width: '80%'
+  };
+  const radioButton = {
+    marginBottom: '1rem'
+  };
+
+  const prepareData = value => {
+    if (value) {
+      if (variant === '') {
+        onChange({
+          parentId: value.value
+        });
+        return;
+      }
+
+      switch (variant) {
+        case 'parentId':
+          onChange({
+            parentId: value.value
+          });
+          return;
+
+        case 'prevSiblingOf':
+          onChange({
+            prevSiblingOf: value.value
+          });
+          return;
+
+        case 'prevSiblingOf':
+          onChange({
+            nextSiblingOf: value.value
+          });
+          return;
+      }
+    }
+  };
+
+  return core.jsx("div", {
+    style: container
+  }, core.jsx("div", {
+    style: selectWidth
+  }, core.jsx(LoadingIndicatorContext.Provider, {
     value: loadingIndicatorContextVal
   }, core.jsx(fields.Select // this is necessary because react-select passes a second argument to onInputChange
   // and useState setters log a warning if a second argument is passed
@@ -265,26 +288,26 @@ const RelationshipSelect = _ref => {
     isLoading: loading || isLoading,
     autoFocus: autoFocus,
     components: relationshipSelectComponents,
-    portalMenu: portalMenu,
-    value: state.value ? {
-      value: state.value.id,
-      label: state.value.label,
-      // @ts-ignore
-      data: state.value.data
-    } : null,
+    value: value ? value : null,
     options: options,
     onChange: value => {
-      state.onChange(value ? {
-        id: value.value,
-        label: value.label,
-        data: value.data
-      } : null);
+      prepareData(value);
     },
-    placeholder: placeholder,
-    controlShouldRenderValue: controlShouldRenderValue,
-    isClearable: controlShouldRenderValue,
     isDisabled: isDisabled
-  }));
+  }))), core.jsx("div", {
+    style: radioClass
+  }, radioVariants.map((variant, index) => core.jsx("div", {
+    style: radioButton,
+    key: variant.value
+  }, core.jsx(fields.Radio, {
+    name: "position",
+    size: "medium",
+    key: variant.value,
+    defaultChecked: index === 0,
+    className: "radioClass",
+    value: variant.value,
+    onChange: value => setPosition(value)
+  }, variant.label)))));
 };
 const relationshipSelectComponents = {
   MenuList: _ref5 => {
@@ -310,101 +333,68 @@ const relationshipSelectComponents = {
   }
 };
 
-const Field = _ref => {
+const Cell = _ref => {
+  let {
+    item,
+    field,
+    linkTo
+  } = _ref;
+  let value = item[field.path] + '';
+  return linkTo ? core.jsx(components.CellLink, linkTo, value) : core.jsx(components.CellContainer, null, value);
+};
+Cell.supportsLinkTo = true;
+const CardValue = _ref2 => {
+  let {
+    item,
+    field
+  } = _ref2;
+  return core.jsx(fields.FieldContainer, null, core.jsx(fields.FieldLabel, null, field.label), item[field.path]);
+};
+const Field = _ref3 => {
   let {
     field,
     value,
-    onChange
-  } = _ref;
-  const list = context.useList(field.listKey);
-  return core.jsx(fields.FieldContainer, {
-    as: "fieldset"
-  }, core.jsx(react.Fragment, null, core.jsx(fields.FieldLabel, {
-    htmlFor: field.path
-  }, field.label), core.jsx(RelationshipSelect, {
-    controlShouldRenderValue: true,
-    list: list,
-    isLoading: false,
-    field: field.path,
-    isDisabled: onChange === undefined,
-    state: {
-      value,
-
-      onChange(newVal) {
-        onChange === null || onChange === void 0 ? void 0 : onChange(_objectSpread(_objectSpread({}, value), {}, {
-          value: newVal
-        }));
-      }
-
-    }
-  })));
-};
-const Cell = _ref2 => {
-  let {
-    field,
-    item
-  } = _ref2;
-  const list = context.useList(field.listKey);
-  const {
-    colors
-  } = core.useTheme();
-  const data = item[field.path];
-  const items = (Array.isArray(data) ? data : [data]).filter(item => item);
-  const displayItems = items.length < 5 ? items : items.slice(0, 3);
-  const overflow = items.length < 5 ? 0 : items.length - 3;
-  const styles = {
-    color: colors.foreground,
-    textDecoration: 'none',
-    ':hover': {
-      textDecoration: 'underline'
-    }
-  };
-  return core.jsx(components.CellContainer, null, displayItems.map((item, index) => core.jsx(react.Fragment, {
-    key: item.id
-  }, !!index ? ', ' : '', core.jsx(Link__default["default"], {
-    href: `/${list.path}/[id]`,
-    as: `/${list.path}/${item.id}`,
-    css: styles
-  }, item.label || item.id))), overflow ? `, and ${overflow} more` : null);
-};
-const CardValue = _ref3 => {
-  let {
-    field
+    onChange,
+    autoFocus
   } = _ref3;
-  return core.jsx(fields.FieldContainer, null, core.jsx(fields.FieldLabel, null, field.label));
+  const foreignList = context.useList(field.refListKey);
+  return core.jsx(fields.FieldContainer, null, core.jsx(fields.FieldLabel, {
+    htmlFor: field.path
+  }, field.label), core.jsx(NestedSetInput, {
+    list: foreignList,
+    onChange: onChange,
+    state: value,
+    autoFocus: autoFocus
+  }));
 };
 const controller = config => {
   return {
     path: config.path,
     label: config.label,
     listKey: config.listKey,
-    defaultValue: {
-      id: null,
-      value: null,
-      initialValue: null
+    refListKey: config.fieldMeta.listKey,
+    display: {
+      mode: 'select',
+      refLabelField: config.fieldMeta.labelField
     },
     graphqlSelection: `${config.path} {
-        parent
-        left
-        right
-        depth
+      left,
+      right,
+      depth,
+      parentId
     }`,
-
-    deserialize(item) {
-      const value = item[config.path];
-      return {
-        data: {
-          parent: value.parent,
-          left: value.left,
-          right: value.right,
-          depth: value.depth
-        }
-      };
+    deserialize: data => {
+      return data[config.path];
     },
+    serialize: value => {
+      if (value && !value.value || !(value !== null && value !== void 0 && value.initialValue)) {
+        return {
+          [config.path]: _objectSpread({}, value)
+        };
+      }
 
-    serialize: value => ({
-      [config.path]: value
-    })
+      return value;
+    }
   };
 };
 

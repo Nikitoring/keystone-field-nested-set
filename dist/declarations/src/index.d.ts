@@ -14,6 +14,10 @@ export declare type NestedSetData = {
     left: number;
     right: number;
 };
-export declare type NestedSetConfig<ListTypeInfo extends BaseListTypeInfo> = CommonFieldConfig<ListTypeInfo> & {} & SelectDisplayConfig;
+export declare type NestedSetConfig<ListTypeInfo extends BaseListTypeInfo> = CommonFieldConfig<ListTypeInfo> & {
+    defaultValue?: {
+        [key: string]: any;
+    };
+} & SelectDisplayConfig;
 export declare const nestedSet: <ListTypeInfo extends BaseListTypeInfo>({ ...config }?: NestedSetConfig<ListTypeInfo>) => FieldTypeFunc<ListTypeInfo>;
 export {};

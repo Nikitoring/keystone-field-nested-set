@@ -1,10 +1,12 @@
+/** @jsxRuntime classic */
+/** @jsx jsx */
 import { jsx } from '@keystone-ui/core';
 import { CardValueComponent, CellComponent, FieldController, FieldControllerConfig, FieldProps } from '@keystone-6/core/types';
-export declare const Field: ({ field, value, onChange }: FieldProps<typeof controller>) => jsx.JSX.Element;
-export declare const Cell: CellComponent<typeof controller>;
-export declare const CardValue: CardValueComponent<typeof controller>;
-export declare type NestedSetValue = {
-    id: string | null;
+export declare const Cell: CellComponent;
+export declare const CardValue: CardValueComponent;
+export declare const Field: ({ field, value, onChange, autoFocus }: FieldProps<typeof controller>) => jsx.JSX.Element;
+declare type NestedSetData = {
+    kind: 'one';
     initialValue: {
         label: string;
         id: string;
@@ -14,6 +16,15 @@ export declare type NestedSetValue = {
         id: string;
     } | null;
 };
-declare type NestedSetController = FieldController<NestedSetValue>;
-export declare const controller: (config: FieldControllerConfig) => FieldController<NestedSetController>;
+export declare type NestedSetValue = null | NestedSetData;
+declare type NestedSetController = FieldController<NestedSetValue> & {
+    listkey: string;
+    labelField: string;
+    displayMode: 'select';
+};
+export declare const controller: (config: FieldControllerConfig<{
+    listkey: string;
+    labelField: string;
+    displayMode: string;
+}>) => NestedSetController;
 export {};

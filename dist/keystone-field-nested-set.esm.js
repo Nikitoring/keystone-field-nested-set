@@ -529,7 +529,7 @@ async function updateNode(destLeft, depthDiff, options, current) {
     right += treeSize;
   }
 
-  const childeTree = await context.prisma[bdTable].findMany({
+  const childrenTree = await context.prisma[bdTable].findMany({
     where: {
       [`${fieldKey}_left`]: {
         gt: left
@@ -547,7 +547,7 @@ async function updateNode(destLeft, depthDiff, options, current) {
   });
   const transactions = [];
 
-  for (const child of childeTree) {
+  for (const child of childrenTree) {
     transactions.push(context.prisma[bdTable].update({
       where: {
         id: child.id
@@ -638,12 +638,10 @@ async function shiftLeftRightRange(first, last, increment, options) {
     }));
   }
 
-  await context.prisma.$transaction(transactions);
-  return;
+  return await context.prisma.$transaction(transactions);
 }
 
-const views = path.join(path.dirname(__dirname), 'scr/views'); // console.log('views', views);
-
+const views = path.join(path.dirname(__dirname), 'views');
 const nestedSetOutputFields = graphql.fields()({
   depth: graphql.field({
     type: graphql.Int
@@ -801,9 +799,21 @@ const nestedSet = function () {
   let config = _extends({}, _ref);
 
   return meta => {
-    meta.lists[meta.listKey].types;
+    const listTypes = meta.lists[meta.listKey].types;
 
-    const commonConfig = _objectSpread({}, config);
+    const commonConfig = _objectSpread(_objectSpread({}, config), {}, {
+      isIndexed: 'unique',
+      getAdminMeta: adminMetaRoot => {
+        if (!listTypes) {
+          throw new Error(`The ref [${listTypes}] on relationship [${meta.listKey}.${meta.fieldKey}] is invalid`);
+        }
+
+        return {
+          listKey: meta.listKey,
+          labelField: adminMetaRoot.listsByKey[meta.listKey].labelField
+        };
+      }
+    });
 
     return fieldType({
       kind: 'multi',
@@ -942,8 +952,8 @@ const nestedSet = function () {
         }
 
       }),
-      views // unreferencedConcreteInterfaceImplementaetions: [NestedSetFieldOutput]
-
+      views,
+      unreferencedConcreteInterfaceImplementaetions: [NestedSetFieldOutput]
     }));
   };
 };
