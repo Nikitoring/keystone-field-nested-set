@@ -771,7 +771,6 @@ export async function updateEntityIsNullFields(
       },
     });
   }
-  console.log('isEntityWithField', isEntityWithField, root, entityId);
   if (!isEntityWithField && root && root.id !== entityId) {
     const { left, right, depth } = await insertLastChildOf(
       root.id,
