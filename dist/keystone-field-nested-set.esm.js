@@ -703,8 +703,6 @@ async function updateEntityIsNullFields(data, context, listKey, fieldKey) {
     });
   }
 
-  console.log('isEntityWithField', isEntityWithField, root, entityId);
-
   if (!isEntityWithField && root && root.id !== entityId) {
     const {
       left,

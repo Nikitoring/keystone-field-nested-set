@@ -269,7 +269,7 @@ const NestedSetInput = _ref => {
           });
           return;
 
-        case 'prevSiblingOf':
+        case 'nextSiblingOf':
           onChange({
             nextSiblingOf: value.value
           });
