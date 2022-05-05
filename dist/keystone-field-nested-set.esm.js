@@ -8,6 +8,27 @@ function isRoot(data) {
   return !!(data.left === 1);
 }
 
+async function getRoot(context, field, listType) {
+  const roots = await context.prisma[listType.toLowerCase()].findMany({
+    where: {
+      [`${field}_depth`]: 0,
+      [`${field}_left`]: 1
+    },
+    select: {
+      id: true,
+      [`${field}_depth`]: true,
+      [`${field}_left`]: true,
+      [`${field}_right`]: true
+    }
+  });
+
+  if (!roots) {
+    return false;
+  }
+
+  return roots[0];
+}
+
 async function createRoot() {
   return {
     left: 1,
@@ -236,7 +257,7 @@ async function fetchTree(parentNode, context, listKey, fieldKey) {
         gte: 1
       },
       [`${fieldKey}_depth`]: {
-        lte: parentNode[`${fieldKey}_depth`]
+        lte: parentNode[`${fieldKey}_depth`] || 1
       }
     },
     orderBy: {
@@ -253,6 +274,7 @@ async function fetchTree(parentNode, context, listKey, fieldKey) {
 }
 
 async function moveNode(inputData, context, listKey, fieldKey, current) {
+  if (!Object.keys(current).length) return null;
   const {
     parentId,
     prevSiblingOf,
@@ -641,16 +663,88 @@ async function shiftLeftRightRange(first, last, increment, options) {
   return await context.prisma.$transaction(transactions);
 }
 
+async function updateEntityIsNullFields(data, context, listKey, fieldKey) {
+  const bdTable = listKey.toLowerCase();
+  const root = await getRoot(context, fieldKey, listKey);
+  let entityId = '';
+  let entityType = '';
+
+  for (const [key, value] of Object.entries(data)) {
+    if (value) {
+      entityId = value;
+      entityType = key;
+    }
+  }
+
+  const entity = await context.prisma[bdTable].findUnique({
+    where: {
+      id: entityId
+    },
+    select: {
+      id: true,
+      [`${fieldKey}_right`]: true,
+      [`${fieldKey}_left`]: true,
+      [`${fieldKey}_depth`]: true
+    }
+  }); // parentId, prevSiblingOf, nextSiblingOf
+
+  const isEntityWithField = entity[`${fieldKey}_right`] && entity[`${fieldKey}_left`];
+
+  if (!root) {
+    await context.prisma[bdTable].update({
+      where: {
+        id: entityId
+      },
+      data: {
+        [`${fieldKey}_left`]: 1,
+        [`${fieldKey}_right`]: 2,
+        [`${fieldKey}_depth`]: 0
+      }
+    });
+  }
+
+  console.log('isEntityWithField', isEntityWithField, root, entityId);
+
+  if (!isEntityWithField && root && root.id !== entityId) {
+    const {
+      left,
+      right,
+      depth
+    } = await insertLastChildOf(root.id, context, listKey, fieldKey);
+    context.prisma[bdTable].update({
+      where: {
+        id: entityId
+      },
+      data: {
+        [`${fieldKey}_left`]: left,
+        [`${fieldKey}_right`]: right,
+        [`${fieldKey}_depth`]: depth
+      }
+    });
+  }
+
+  switch (entityType) {
+    case 'parentId':
+      return await insertLastChildOf(entityId, context, listKey, fieldKey);
+
+    case 'prevSiblingOf':
+      return await insertPrevSiblingOf(entityId, context, listKey, fieldKey);
+
+    case 'nextSiblingOf':
+      return await insertNextSiblingOf(entityId, context, listKey, fieldKey);
+  }
+}
+
 const views = path.join(path.dirname(__dirname), 'views');
 const nestedSetOutputFields = graphql.fields()({
   depth: graphql.field({
     type: graphql.Int
   }),
   left: graphql.field({
-    type: graphql.nonNull(graphql.Int)
+    type: graphql.Int
   }),
   right: graphql.field({
-    type: graphql.nonNull(graphql.Int)
+    type: graphql.Int
   }),
   weight: graphql.field({
     type: graphql.nonNull(graphql.Int),
@@ -761,6 +855,14 @@ async function inputResolver(data, context, listKey, fieldKey) {
   return data;
 }
 
+async function updateEntityIsNull(data, context, listKey, fieldKey) {
+  if (data === null || data === undefined) {
+    return null;
+  }
+
+  return await updateEntityIsNullFields(data, context, listKey, fieldKey);
+}
+
 async function filterResolver(data, context, listKey, fieldKey) {
   const {
     prevSiblingId,
@@ -848,13 +950,17 @@ const nestedSet = function () {
           } = _ref2;
           let currentItem = {};
 
-          if (item && item.id) {
+          if (item && item.id && item[`${fieldKey}_left`] !== null && item[`${fieldKey}_right`] !== null) {
             currentItem = {
               id: item.id,
               [`${fieldKey}_left`]: item[`${fieldKey}_left`],
               [`${fieldKey}_right`]: item[`${fieldKey}_right`],
               [`${fieldKey}_depth`]: item[`${fieldKey}_depth`]
             };
+          }
+
+          if (!Object.keys(currentItem).length) {
+            return updateEntityIsNull(inputData[fieldKey], context, listKey, fieldKey);
           }
 
           if (operation === 'update') {
@@ -944,7 +1050,7 @@ const nestedSet = function () {
             value
           } = _ref4;
 
-          if (value.left === null || value.right === null || value.depth === null) {
+          if (value.left === null || value.left === undefined || value.right === null || value.right === undefined || value.depth === null || value.depth === undefined) {
             return null;
           }
 

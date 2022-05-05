@@ -40,7 +40,7 @@ export const Field = ({ field, value, onChange, autoFocus }: FieldProps<typeof c
     <FieldContainer>
       <FieldLabel htmlFor={field.path}>{field.label}</FieldLabel>
       {/* {field.refListKey} */}
-      <NestedSetInput list={foreignList} onChange={onChange} state={value} autoFocus={autoFocus} />
+      <NestedSetInput list={foreignList} onChange={onChange} state={value} autoFocus={autoFocus} graphqlSelection={field.graphqlSelection} path={field.path} />
     </FieldContainer>
   );
 };

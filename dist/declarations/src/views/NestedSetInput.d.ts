@@ -3,7 +3,7 @@
 import 'intersection-observer';
 import { jsx } from '@keystone-ui/core';
 import { ListMeta } from '@keystone-6/core/types';
-export declare const NestedSetInput: ({ autoFocus, isDisabled, isLoading, list, state, field, onChange, }: {
+export declare const NestedSetInput: ({ autoFocus, isDisabled, isLoading, list, state, field, onChange, graphqlSelection, path }: {
     autoFocus?: boolean | undefined;
     controlShouldRenderValue: boolean;
     isDisabled: boolean;
@@ -17,4 +17,6 @@ export declare const NestedSetInput: ({ autoFocus, isDisabled, isLoading, list, 
         parentId: string;
     };
     field: string;
+    graphqlSelection: string;
+    path: string;
 }) => jsx.JSX.Element;

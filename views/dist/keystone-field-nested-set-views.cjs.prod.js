@@ -83,7 +83,9 @@ const NestedSetInput = _ref => {
     list,
     state,
     field,
-    onChange
+    onChange,
+    graphqlSelection,
+    path
   } = _ref;
   const [search, setSearch] = react.useState('');
   const [variant, setVariant] = react.useState('');
@@ -93,6 +95,7 @@ const NestedSetInput = _ref => {
       items: ${list.gqlNames.listQueryName}(where: $where, take: $take, skip: $skip) {
         ${idField}: id
         ${labelField}: ${list.labelField}
+        ${graphqlSelection}
       }
       count: ${list.gqlNames.listQueryCountName}(where: $where)
     }
@@ -154,6 +157,7 @@ const NestedSetInput = _ref => {
     return {
       value,
       label: label || value,
+      [path]: data[path],
       data
     };
   })) || []; // if parentId get this entity
@@ -213,13 +217,16 @@ const NestedSetInput = _ref => {
   const radioVariants = [{
     label: 'Parent',
     value: 'parenId',
-    checked: true
+    checked: true,
+    disabled: false
   }, {
     label: 'Before',
-    value: 'prevSiblingOf'
+    value: 'prevSiblingOf',
+    disabled: false
   }, {
     label: 'After',
-    value: 'nextSiblingOf'
+    value: 'nextSiblingOf',
+    disabled: false
   }];
   const radioClass = {
     display: 'flex',
@@ -306,7 +313,8 @@ const NestedSetInput = _ref => {
     defaultChecked: index === 0,
     className: "radioClass",
     value: variant.value,
-    onChange: value => setPosition(value)
+    onChange: value => setPosition(value),
+    disabled: variant.disabled
   }, variant.label)))));
 };
 const relationshipSelectComponents = {
@@ -364,7 +372,9 @@ const Field = _ref3 => {
     list: foreignList,
     onChange: onChange,
     state: value,
-    autoFocus: autoFocus
+    autoFocus: autoFocus,
+    graphqlSelection: field.graphqlSelection,
+    path: field.path
   }));
 };
 const controller = config => {

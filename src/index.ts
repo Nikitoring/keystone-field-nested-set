@@ -23,7 +23,8 @@ import {
   insertNextSiblingOf,
   insertPrevSiblingOf,
   moveNode,
-  deleteResolver
+  deleteResolver,
+  updateEntityIsNullFields
 } from './utils';
 
 import { Path } from 'graphql/jsutils/Path';
@@ -49,8 +50,8 @@ export type NestedSetData = {
 
 const nestedSetOutputFields = graphql.fields<NestedSetData>()({
   depth: graphql.field({ type: graphql.Int }),
-  left: graphql.field({ type: graphql.nonNull(graphql.Int) }),
-  right: graphql.field({ type: graphql.nonNull(graphql.Int) }),
+  left: graphql.field({ type: graphql.Int }),
+  right: graphql.field({ type: graphql.Int }),
   weight: graphql.field({
     type: graphql.nonNull(graphql.Int),
     resolve(item, args, type, context) {
@@ -138,6 +139,16 @@ async function inputResolver(
   }
   return data;
 }
+async function updateEntityIsNull(
+  data: NestedSetFieldInputType,
+  context: KeystoneContext,
+  listKey: string,
+  fieldKey: string) {
+  if (data === null || data === undefined) {
+    return null;
+  }
+  return await updateEntityIsNullFields(data, context, listKey, fieldKey)
+}
 
 async function filterResolver(
   data: NestedSetFieldFilterType,
@@ -214,13 +225,16 @@ export const nestedSet =
       hooks: {
         resolveInput: async ({ listKey, fieldKey, operation, inputData, item, resolvedData, context }) => {
           let currentItem = {};
-          if (item && item.id) {
+          if (item && item.id && item[`${fieldKey}_left`] !== null && item[`${fieldKey}_right`] !== null) {
             currentItem = {
               id: item.id,
               [`${fieldKey}_left`]: item[`${fieldKey}_left`],
               [`${fieldKey}_right`]: item[`${fieldKey}_right`],
               [`${fieldKey}_depth`]: item[`${fieldKey}_depth`]
             };
+          }
+          if (!Object.keys(currentItem).length) {
+            return updateEntityIsNull(inputData[fieldKey], context, listKey, fieldKey);
           }
           if (operation === 'update') {
             return moveNode(inputData, context, listKey, fieldKey, currentItem);
@@ -275,7 +289,7 @@ export const nestedSet =
       output: graphql.field({
         type: NestedSetFieldOutput,
         resolve({ value }) {
-          if (value.left === null || value.right === null || value.depth === null) {
+          if ((value.left === null || value.left === undefined )|| (value.right === null || value.right === undefined) || (value.depth === null || value.depth === undefined)) {
             return null;
           }
           return { ...value };
