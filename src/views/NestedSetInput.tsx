@@ -281,7 +281,7 @@ export const NestedSetInput = ({
         case 'prevSiblingOf':
           onChange({ prevSiblingOf: value.value });
           return;
-        case 'prevSiblingOf':
+        case 'nextSiblingOf':
           onChange({ nextSiblingOf: value.value });
           return;
       }
