@@ -68,9 +68,20 @@ export declare function moveNode(inputData: {
     [key: string]: any;
 }): Promise<{
     depth: any;
-} | undefined>;
+} | null | undefined>;
 export declare function deleteResolver(current: {
     [key: string]: any;
 }, options: {
     [key: string]: any;
 }): Promise<void>;
+declare type NestedSetFieldInputType = {
+    parentId?: string;
+    prevSiblingOf?: string;
+    nextSiblingOf?: string;
+};
+export declare function updateEntityIsNullFields(data: NestedSetFieldInputType, context: KeystoneContext, listKey: string, fieldKey: string): Promise<false | {
+    left: any;
+    right: any;
+    depth: any;
+} | undefined>;
+export {};

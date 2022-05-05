@@ -20,6 +20,8 @@ const idField = '____id____';
 
 const labelField = '____label____';
 
+const nestedSetField = '____nestedSet____';
+
 const LoadingIndicatorContext = createContext<{
   count: number;
   ref: (element: HTMLElement | null) => void;
@@ -84,6 +86,8 @@ export const NestedSetInput = ({
   state,
   field,
   onChange,
+  graphqlSelection,
+  path
 }: {
   autoFocus?: boolean;
   controlShouldRenderValue: boolean;
@@ -98,18 +102,21 @@ export const NestedSetInput = ({
     parentId: string;
   };
   field: string;
+  graphqlSelection: string;
+  path: string;
 }) => {
   const [search, setSearch] = useState('');
   const [variant, setVariant] = useState('');
   const [loadingIndicatorElement, setLoadingIndicatorElement] = useState<null | HTMLElement>(null);
   const QUERY: TypedDocumentNode<
-    { items: { [idField]: string; [labelField]: string | null }[]; count: number },
+    { items: { [idField]: string; [labelField]: string | null; }[]; count: number },
     { where: Record<string, any>; take: number; skip: number }
   > = gql`
     query NestedSetSelect($where: ${list.gqlNames.whereInputName}!, $take: Int!, $skip: Int!) {
       items: ${list.gqlNames.listQueryName}(where: $where, take: $take, skip: $skip) {
         ${idField}: id
         ${labelField}: ${list.labelField}
+        ${graphqlSelection}
       }
       count: ${list.gqlNames.listQueryCountName}(where: $where)
     }
@@ -151,13 +158,12 @@ export const NestedSetInput = ({
     variables: { where, take: initialItemsToLoad, skip: 0 },
     client: apolloClient,
   });
-
   const count = data?.count || 0;
-
   const options =
     data?.items?.map(({ [idField]: value, [labelField]: label, ...data }) => ({
       value,
       label: label || value,
+      [path]: data[path],
       data,
     })) || [];
 
@@ -229,14 +235,17 @@ export const NestedSetInput = ({
       label: 'Parent',
       value: 'parenId',
       checked: true,
+      disabled: false
     },
     {
       label: 'Before',
       value: 'prevSiblingOf',
+      disabled: false
     },
     {
       label: 'After',
       value: 'nextSiblingOf',
+      disabled: false
     },
   ];
   const radioClass = {
@@ -309,6 +318,7 @@ export const NestedSetInput = ({
               className="radioClass"
               value={variant.value}
               onChange={value => setPosition(value)}
+              disabled={variant.disabled}
             >
               {variant.label}
             </Radio>
