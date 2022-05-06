@@ -88,11 +88,14 @@ const NestedSetInput = _ref => {
     path
   } = _ref;
   const [search, setSearch] = react.useState('');
-  const [variant, setVariant] = react.useState('');
+  const [variant, setVariant] = react.useState('parentId');
   const [loadingIndicatorElement, setLoadingIndicatorElement] = react.useState(null);
+  const orderByField = {
+    [path]: 'asc'
+  };
   const QUERY = apollo.gql`
-    query NestedSetSelect($where: ${list.gqlNames.whereInputName}!, $take: Int!, $skip: Int!) {
-      items: ${list.gqlNames.listQueryName}(where: $where, take: $take, skip: $skip) {
+    query NestedSetSelect($where: ${list.gqlNames.whereInputName}!, $take: Int!, $skip: Int!, $orderBy: [${list.gqlNames.listOrderName}!] ) {
+      items: ${list.gqlNames.listQueryName}(where: $where, take: $take, skip: $skip, orderBy: $orderBy) {
         ${idField}: id
         ${labelField}: ${list.labelField}
         ${graphqlSelection}
@@ -132,6 +135,21 @@ const NestedSetInput = _ref => {
       }
     })
   }), [link, list.gqlNames.listQueryName]);
+
+  const generateIndent = function (label) {
+    let depth = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+    let text = '';
+
+    if (depth > 0) {
+      for (let i = 0; i < depth; i++) {
+        text += '- ';
+      }
+    }
+
+    text += label;
+    return text;
+  };
+
   const {
     data,
     error,
@@ -142,7 +160,8 @@ const NestedSetInput = _ref => {
     variables: {
       where,
       take: initialItemsToLoad,
-      skip: 0
+      skip: 0,
+      orderBy: orderByField
     },
     client: apolloClient
   });
@@ -156,7 +175,7 @@ const NestedSetInput = _ref => {
 
     return {
       value,
-      label: label || value,
+      label: generateIndent(label || value, data[path].depth),
       [path]: data[path],
       data
     };
@@ -181,10 +200,11 @@ const NestedSetInput = _ref => {
 
     if (!loading && skip && isIntersecting && options.length < count && ((lastFetchMore === null || lastFetchMore === void 0 ? void 0 : lastFetchMore.where) !== where || (lastFetchMore === null || lastFetchMore === void 0 ? void 0 : lastFetchMore.list) !== list || (lastFetchMore === null || lastFetchMore === void 0 ? void 0 : lastFetchMore.skip) !== skip)) {
       const QUERY = apollo.gql`
-              query NestedSetSelectMore($where: ${list.gqlNames.whereInputName}!, $take: Int!, $skip: Int!) {
-                items: ${list.gqlNames.listQueryName}(where: $where, take: $take, skip: $skip) {
+              query NestedSetSelectMore($where: ${list.gqlNames.whereInputName}!, $take: Int!, $skip: Int!, $orderBy: [${list.gqlNames.listOrderName}!]) {
+                items: ${list.gqlNames.listQueryName}(where: $where, take: $take, skip: $skip, orderBy: $orderBy) {
                   ${labelField}: ${list.labelField}
-                  ${idField}: id
+                  ${idField}: id,
+                  ${graphqlSelection}
                 }
               }
             `;
@@ -198,7 +218,8 @@ const NestedSetInput = _ref => {
         variables: {
           where,
           take: subsequentItemsToLoad,
-          skip
+          skip,
+          orderBy: orderByField
         }
       }).then(() => {
         setLastFetchMore(null);
@@ -251,6 +272,18 @@ const NestedSetInput = _ref => {
     marginBottom: '1rem'
   };
 
+  const showError = value => {
+    if (!value || !Object.keys(value).length) {
+      return core.jsx("div", {
+        css: {
+          color: 'red'
+        }
+      }, "Please choose value.");
+    }
+
+    return;
+  };
+
   const prepareData = value => {
     if (value) {
       if (variant === '') {
@@ -280,6 +313,9 @@ const NestedSetInput = _ref => {
           return;
       }
     }
+
+    onChange(null);
+    return;
   };
 
   return core.jsx("div", {
@@ -292,16 +328,19 @@ const NestedSetInput = _ref => {
   // and useState setters log a warning if a second argument is passed
   , {
     onInputChange: val => setSearch(val),
+    placeholder: "Select",
     isLoading: loading || isLoading,
     autoFocus: autoFocus,
     components: relationshipSelectComponents,
-    value: value ? value : null,
+    value: value,
     options: options,
     onChange: value => {
       prepareData(value);
     },
-    isDisabled: isDisabled
-  }))), core.jsx("div", {
+    isDisabled: isDisabled,
+    portalMenu: true,
+    isClearable: true
+  })), showError(value)), core.jsx("div", {
     style: radioClass
   }, radioVariants.map((variant, index) => core.jsx("div", {
     style: radioButton,
@@ -396,6 +435,11 @@ const controller = config => {
     deserialize: data => {
       return data[config.path];
     },
+
+    validate(value) {
+      return !!value;
+    },
+
     serialize: value => {
       if (value && !value.value || !(value !== null && value !== void 0 && value.initialValue)) {
         return {

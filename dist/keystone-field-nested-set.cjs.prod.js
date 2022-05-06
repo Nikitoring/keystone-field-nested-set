@@ -954,22 +954,23 @@ const nestedSet = function () {
             resolvedData,
             context
           } = _ref2;
-          let currentItem = {};
-
-          if (item && item.id && item[`${fieldKey}_left`] !== null && item[`${fieldKey}_right`] !== null) {
-            currentItem = {
-              id: item.id,
-              [`${fieldKey}_left`]: item[`${fieldKey}_left`],
-              [`${fieldKey}_right`]: item[`${fieldKey}_right`],
-              [`${fieldKey}_depth`]: item[`${fieldKey}_depth`]
-            };
-          }
-
-          if (!Object.keys(currentItem).length) {
-            return updateEntityIsNull(inputData[fieldKey], context, listKey, fieldKey);
-          }
 
           if (operation === 'update') {
+            let currentItem = {};
+
+            if (item && item.id && item[`${fieldKey}_left`] !== null && item[`${fieldKey}_right`] !== null) {
+              currentItem = {
+                id: item.id,
+                [`${fieldKey}_left`]: item[`${fieldKey}_left`],
+                [`${fieldKey}_right`]: item[`${fieldKey}_right`],
+                [`${fieldKey}_depth`]: item[`${fieldKey}_depth`]
+              };
+            }
+
+            if (!Object.keys(currentItem).length) {
+              return updateEntityIsNull(inputData[fieldKey], context, listKey, fieldKey);
+            }
+
             return moveNode(inputData, context, listKey, fieldKey, currentItem);
           }
 
@@ -986,16 +987,14 @@ const nestedSet = function () {
 
           if (operation === 'delete') {
             let currentItem = {};
-
-            if (item && item.id) {
-              currentItem = {
-                id: item.id,
-                [`${fieldKey}_left`]: item[`${fieldKey}_left`],
-                [`${fieldKey}_right`]: item[`${fieldKey}_right`],
-                [`${fieldKey}_depth`]: item[`${fieldKey}_depth`]
-              };
-            }
-
+            if (!item.id) return;
+            if (!item[`${fieldKey}_left`] || !item[`${fieldKey}_right`]) return;
+            currentItem = {
+              id: item.id,
+              [`${fieldKey}_left`]: item[`${fieldKey}_left`],
+              [`${fieldKey}_right`]: item[`${fieldKey}_right`],
+              [`${fieldKey}_depth`]: item[`${fieldKey}_depth`]
+            };
             return deleteResolver(currentItem, {
               context,
               listKey,
