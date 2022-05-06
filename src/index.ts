@@ -1,4 +1,4 @@
-import path from 'path'
+import path from 'path';
 import {
   BaseListTypeInfo,
   FieldTypeFunc,
@@ -24,7 +24,7 @@ import {
   insertPrevSiblingOf,
   moveNode,
   deleteResolver,
-  updateEntityIsNullFields
+  updateEntityIsNullFields,
 } from './utils';
 
 import { Path } from 'graphql/jsutils/Path';
@@ -56,40 +56,40 @@ const nestedSetOutputFields = graphql.fields<NestedSetData>()({
     type: graphql.nonNull(graphql.Int),
     resolve(item, args, type, context) {
       return getWeight({ ...item });
-    }
+    },
   }),
   isLeaf: graphql.field({
     type: graphql.nonNull(graphql.Boolean),
     resolve(item) {
       return isLeaf({ ...item });
-    }
+    },
   }),
   parentId: graphql.field({
     type: graphql.ID,
     resolve(item, args, context, info) {
       const { key, typename } = info.path.prev as Path;
       return getParentId({ ...item }, context, key, typename);
-    }
+    },
   }),
   childrenCount: graphql.field({
     type: graphql.nonNull(graphql.Int),
     resolve(item, args, context, info) {
       const { key, typename } = info.path.prev as Path;
       return getchildrenCount({ ...item }, context, key, typename);
-    }
-  })
+    },
+  }),
 });
 
 const NestedSetOutput = graphql.interface<Omit<NestedSetData, 'type'>>()({
   name: 'NestedSetOutput',
   fields: nestedSetOutputFields,
-  resolveType: () => 'NestedSetFieldOutput'
+  resolveType: () => 'NestedSetFieldOutput',
 });
 
 const NestedSetFieldOutput = graphql.object<Omit<NestedSetData, 'type'>>()({
   name: 'NestedSetFieldOutput',
   interfaces: [NestedSetOutput],
-  fields: nestedSetOutputFields
+  fields: nestedSetOutputFields,
 });
 
 const NestedSetFieldInput = graphql.inputObject({
@@ -97,8 +97,8 @@ const NestedSetFieldInput = graphql.inputObject({
   fields: {
     parentId: graphql.arg({ type: graphql.ID }),
     prevSiblingOf: graphql.arg({ type: graphql.ID }),
-    nextSiblingOf: graphql.arg({ type: graphql.ID })
-  }
+    nextSiblingOf: graphql.arg({ type: graphql.ID }),
+  },
 });
 
 const NestedSetFilterInput = graphql.inputObject({
@@ -107,11 +107,14 @@ const NestedSetFilterInput = graphql.inputObject({
     prevSiblingId: graphql.arg({ type: graphql.ID }),
     nextSiblingId: graphql.arg({ type: graphql.ID }),
     parentOf: graphql.arg({ type: graphql.ID }),
-    childOf: graphql.arg({ type: graphql.ID })
-  }
+    childOf: graphql.arg({ type: graphql.ID }),
+  },
 });
 
-type NestedSetFieldInputType = undefined | null | { parentId?: string; prevSiblingOf?: string; nextSiblingOf?: string };
+type NestedSetFieldInputType =
+  | undefined
+  | null
+  | { parentId?: string; prevSiblingOf?: string; nextSiblingOf?: string };
 
 type NestedSetFieldFilterType =
   | undefined
@@ -143,11 +146,12 @@ async function updateEntityIsNull(
   data: NestedSetFieldInputType,
   context: KeystoneContext,
   listKey: string,
-  fieldKey: string) {
+  fieldKey: string
+) {
   if (data === null || data === undefined) {
     return null;
   }
-  return await updateEntityIsNullFields(data, context, listKey, fieldKey)
+  return await updateEntityIsNullFields(data, context, listKey, fieldKey);
 }
 
 async function filterResolver(
@@ -178,13 +182,13 @@ async function filterResolver(
 }
 
 export type NestedSetConfig<ListTypeInfo extends BaseListTypeInfo> =
-  CommonFieldConfig<ListTypeInfo> & { defaultValue?: { [key: string]: any }} & SelectDisplayConfig;
+  CommonFieldConfig<ListTypeInfo> & { defaultValue?: { [key: string]: any } } & SelectDisplayConfig;
 
 export const nestedSet =
   <ListTypeInfo extends BaseListTypeInfo>({
     ...config
   }: NestedSetConfig<ListTypeInfo> = {}): FieldTypeFunc<ListTypeInfo> =>
-  (meta) => {
+  meta => {
     const listTypes = meta.lists[meta.listKey].types;
     const commonConfig = {
       ...config,
@@ -193,13 +197,15 @@ export const nestedSet =
         adminMetaRoot: AdminMetaRootVal
       ): Parameters<typeof import('./views').controller>[0]['fieldMeta'] => {
         if (!listTypes) {
-          throw new Error(`The ref [${listTypes}] on relationship [${meta.listKey}.${meta.fieldKey}] is invalid`);
+          throw new Error(
+            `The ref [${listTypes}] on relationship [${meta.listKey}.${meta.fieldKey}] is invalid`
+          );
         }
         return {
           listKey: meta.listKey,
-          labelField: adminMetaRoot.listsByKey[meta.listKey].labelField
+          labelField: adminMetaRoot.listsByKey[meta.listKey].labelField,
         };
-      }
+      },
     };
     return fieldType({
       kind: 'multi',
@@ -207,36 +213,49 @@ export const nestedSet =
         left: {
           kind: 'scalar',
           scalar: 'Int',
-          mode: 'optional'
+          mode: 'optional',
         },
         right: {
           kind: 'scalar',
           scalar: 'Int',
-          mode: 'optional'
+          mode: 'optional',
         },
         depth: {
           kind: 'scalar',
           scalar: 'Int',
-          mode: 'optional'
-        }
-      }
+          mode: 'optional',
+        },
+      },
     })({
       ...commonConfig,
       hooks: {
-        resolveInput: async ({ listKey, fieldKey, operation, inputData, item, resolvedData, context }) => {
-          let currentItem = {};
-          if (item && item.id && item[`${fieldKey}_left`] !== null && item[`${fieldKey}_right`] !== null) {
-            currentItem = {
-              id: item.id,
-              [`${fieldKey}_left`]: item[`${fieldKey}_left`],
-              [`${fieldKey}_right`]: item[`${fieldKey}_right`],
-              [`${fieldKey}_depth`]: item[`${fieldKey}_depth`]
-            };
-          }
-          if (!Object.keys(currentItem).length) {
-            return updateEntityIsNull(inputData[fieldKey], context, listKey, fieldKey);
-          }
+        resolveInput: async ({
+          listKey,
+          fieldKey,
+          operation,
+          inputData,
+          item,
+          resolvedData,
+          context,
+        }) => {
           if (operation === 'update') {
+            let currentItem = {};
+            if (
+              item &&
+              item.id &&
+              item[`${fieldKey}_left`] !== null &&
+              item[`${fieldKey}_right`] !== null
+            ) {
+              currentItem = {
+                id: item.id,
+                [`${fieldKey}_left`]: item[`${fieldKey}_left`],
+                [`${fieldKey}_right`]: item[`${fieldKey}_right`],
+                [`${fieldKey}_depth`]: item[`${fieldKey}_depth`],
+              };
+            }
+            if (!Object.keys(currentItem).length) {
+              return updateEntityIsNull(inputData[fieldKey], context, listKey, fieldKey);
+            }
             return moveNode(inputData, context, listKey, fieldKey, currentItem);
           }
           return resolvedData[fieldKey];
@@ -245,57 +264,64 @@ export const nestedSet =
         validateDelete: async ({ listKey, fieldKey, item, context, operation }) => {
           if (operation === 'delete') {
             let currentItem = {};
-            if (item && item.id) {
-              currentItem = {
-                id: item.id,
-                [`${fieldKey}_left`]: item[`${fieldKey}_left`],
-                [`${fieldKey}_right`]: item[`${fieldKey}_right`],
-                [`${fieldKey}_depth`]: item[`${fieldKey}_depth`]
-              };
-            }
+            if (!item.id) return;
+            if (!item[`${fieldKey}_left`] || !item[`${fieldKey}_right`]) return;
+            currentItem = {
+              id: item.id,
+              [`${fieldKey}_left`]: item[`${fieldKey}_left`],
+              [`${fieldKey}_right`]: item[`${fieldKey}_right`],
+              [`${fieldKey}_depth`]: item[`${fieldKey}_depth`],
+            };
             return deleteResolver(currentItem, { context, listKey, fieldKey });
           }
           return;
-        }
+        },
       },
       input: {
         where: {
           arg: graphql.arg({ type: NestedSetFilterInput }),
           resolve(value, context) {
             return filterResolver(value, context, meta.listKey, meta.fieldKey);
-          }
+          },
         },
         create: {
           arg: graphql.arg({ type: NestedSetFieldInput }),
           async resolve(value, context) {
             return inputResolver(value, context, meta.listKey, meta.fieldKey);
-          }
+          },
         },
         update: {
           arg: graphql.arg({ type: NestedSetFieldInput }),
           async resolve(value, context, resolve) {
             return;
-          }
+          },
         },
         orderBy: {
           arg: graphql.arg({ type: orderDirectionEnum }),
-          resolve: (direction) => {
+          resolve: direction => {
             return {
-              left: direction
+              left: direction,
             };
-          }
-        }
+          },
+        },
       },
       output: graphql.field({
         type: NestedSetFieldOutput,
         resolve({ value }) {
-          if ((value.left === null || value.left === undefined )|| (value.right === null || value.right === undefined) || (value.depth === null || value.depth === undefined)) {
+          if (
+            value.left === null ||
+            value.left === undefined ||
+            value.right === null ||
+            value.right === undefined ||
+            value.depth === null ||
+            value.depth === undefined
+          ) {
             return null;
           }
           return { ...value };
-        }
+        },
       }),
       views,
-      unreferencedConcreteInterfaceImplementaetions: [NestedSetFieldOutput]
+      unreferencedConcreteInterfaceImplementaetions: [NestedSetFieldOutput],
     });
   };
