@@ -87,7 +87,7 @@ export const NestedSetInput = ({
   field,
   onChange,
   graphqlSelection,
-  path
+  path,
 }: {
   autoFocus?: boolean;
   controlShouldRenderValue: boolean;
@@ -106,12 +106,12 @@ export const NestedSetInput = ({
   path: string;
 }) => {
   const [search, setSearch] = useState('');
-  const [variant, setVariant] = useState('');
+  const [variant, setVariant] = useState('parentId');
   const [loadingIndicatorElement, setLoadingIndicatorElement] = useState<null | HTMLElement>(null);
-  const orderByField = {[path]: 'asc'}
+  const orderByField = { [path]: 'asc' };
   const QUERY: TypedDocumentNode<
-    { items: { [idField]: string; [labelField]: string | null; }[]; count: number },
-    { where: Record<string, any>; take: number; skip: number, orderBy: Record<string, any>; }
+    { items: { [idField]: string; [labelField]: string | null }[]; count: number },
+    { where: Record<string, any>; take: number; skip: number; orderBy: Record<string, any> }
   > = gql`
     query NestedSetSelect($where: ${list.gqlNames.whereInputName}!, $take: Int!, $skip: Int!, $orderBy: [${list.gqlNames.listOrderName}!] ) {
       items: ${list.gqlNames.listQueryName}(where: $where, take: $take, skip: $skip, orderBy: $orderBy) {
@@ -154,25 +154,25 @@ export const NestedSetInput = ({
     [link, list.gqlNames.listQueryName]
   );
   const generateIndent = (label: string, depth = 0) => {
-    let text = ''
+    let text = '';
     if (depth > 0) {
       for (let i = 0; i < depth; i++) {
-        text += '- '
+        text += '- ';
       }
     }
-    text += label
-    return text 
-  }
+    text += label;
+    return text;
+  };
   const { data, error, loading, fetchMore } = useQuery(QUERY, {
     fetchPolicy: 'network-only',
-    variables: { where, take: initialItemsToLoad, skip: 0, orderBy: orderByField},
+    variables: { where, take: initialItemsToLoad, skip: 0, orderBy: orderByField },
     client: apolloClient,
   });
   const count = data?.count || 0;
   const options =
     data?.items?.map(({ [idField]: value, [labelField]: label, ...data }) => ({
       value,
-      label: generateIndent(label || value,data[path].depth),
+      label: generateIndent(label || value, data[path].depth),
       [path]: data[path],
       data,
     })) || [];
@@ -180,7 +180,7 @@ export const NestedSetInput = ({
   // if parentId get this entity
   let value: { [key: string]: any } = {};
   if (state?.parentId) {
-    value = options.find(option => option.value === state?.parentId)
+    value = options.find(option => option.value === state?.parentId);
   }
   const loadingIndicatorContextVal = useMemo(
     () => ({
@@ -209,7 +209,7 @@ export const NestedSetInput = ({
       ) {
         const QUERY: TypedDocumentNode<
           { items: { [idField]: string; [labelField]: string | null }[] },
-          { where: Record<string, any>; take: number; skip: number, orderBy: Record<string, any>; }
+          { where: Record<string, any>; take: number; skip: number; orderBy: Record<string, any> }
         > = gql`
               query NestedSetSelectMore($where: ${list.gqlNames.whereInputName}!, $take: Int!, $skip: Int!, $orderBy: [${list.gqlNames.listOrderName}!]) {
                 items: ${list.gqlNames.listQueryName}(where: $where, take: $take, skip: $skip, orderBy: $orderBy) {
@@ -226,7 +226,7 @@ export const NestedSetInput = ({
             where,
             take: subsequentItemsToLoad,
             skip,
-            orderBy: orderByField
+            orderBy: orderByField,
           },
         })
           .then(() => {
@@ -247,17 +247,17 @@ export const NestedSetInput = ({
       label: 'Parent',
       value: 'parenId',
       checked: true,
-      disabled: false
+      disabled: false,
     },
     {
       label: 'Before',
       value: 'prevSiblingOf',
-      disabled: false
+      disabled: false,
     },
     {
       label: 'After',
       value: 'nextSiblingOf',
-      disabled: false
+      disabled: false,
     },
   ];
   const radioClass = {
@@ -280,8 +280,16 @@ export const NestedSetInput = ({
   const radioButton = {
     marginBottom: '1rem',
   };
+  const showError = (value: { [key: string]: any }) => {
+    if (!value || !Object.keys(value).length) {
+      return <div css={{ color: 'red' }}>Please choose value.</div>;
+    }
+    return 
+  };
+
   const prepareData = (value: { [key: string]: any }) => {
     if (value) {
+      
       if (variant === '') {
         onChange({ parentId: value.value });
         return;
@@ -298,6 +306,8 @@ export const NestedSetInput = ({
           return;
       }
     }
+    onChange(null);
+    return;
   };
   return (
     <div style={container}>
@@ -307,17 +317,21 @@ export const NestedSetInput = ({
             // this is necessary because react-select passes a second argument to onInputChange
             // and useState setters log a warning if a second argument is passed
             onInputChange={val => setSearch(val)}
+            placeholder="Select"
             isLoading={loading || isLoading}
             autoFocus={autoFocus}
             components={relationshipSelectComponents}
-            value={value ? value : null}
+            value={value}
             options={options}
             onChange={value => {
               prepareData(value);
             }}
             isDisabled={isDisabled}
+            portalMenu
+            isClearable
           />
         </LoadingIndicatorContext.Provider>
+        {showError(value)}
       </div>
       <div style={radioClass}>
         {radioVariants.map((variant, index) => (
