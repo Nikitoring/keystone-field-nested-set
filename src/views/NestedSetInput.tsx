@@ -108,12 +108,13 @@ export const NestedSetInput = ({
   const [search, setSearch] = useState('');
   const [variant, setVariant] = useState('');
   const [loadingIndicatorElement, setLoadingIndicatorElement] = useState<null | HTMLElement>(null);
+  const orderByField = {[path]: 'asc'}
   const QUERY: TypedDocumentNode<
     { items: { [idField]: string; [labelField]: string | null; }[]; count: number },
-    { where: Record<string, any>; take: number; skip: number }
+    { where: Record<string, any>; take: number; skip: number, orderBy: Record<string, any>; }
   > = gql`
-    query NestedSetSelect($where: ${list.gqlNames.whereInputName}!, $take: Int!, $skip: Int!) {
-      items: ${list.gqlNames.listQueryName}(where: $where, take: $take, skip: $skip) {
+    query NestedSetSelect($where: ${list.gqlNames.whereInputName}!, $take: Int!, $skip: Int!, $orderBy: [${list.gqlNames.listOrderName}!] ) {
+      items: ${list.gqlNames.listQueryName}(where: $where, take: $take, skip: $skip, orderBy: $orderBy) {
         ${idField}: id
         ${labelField}: ${list.labelField}
         ${graphqlSelection}
@@ -152,17 +153,26 @@ export const NestedSetInput = ({
       }),
     [link, list.gqlNames.listQueryName]
   );
-
+  const generateIndent = (label: string, depth = 0) => {
+    let text = ''
+    if (depth > 0) {
+      for (let i = 0; i < depth; i++) {
+        text += '- '
+      }
+    }
+    text += label
+    return text 
+  }
   const { data, error, loading, fetchMore } = useQuery(QUERY, {
     fetchPolicy: 'network-only',
-    variables: { where, take: initialItemsToLoad, skip: 0 },
+    variables: { where, take: initialItemsToLoad, skip: 0, orderBy: orderByField},
     client: apolloClient,
   });
   const count = data?.count || 0;
   const options =
     data?.items?.map(({ [idField]: value, [labelField]: label, ...data }) => ({
       value,
-      label: label || value,
+      label: generateIndent(label || value,data[path].depth),
       [path]: data[path],
       data,
     })) || [];
@@ -199,12 +209,13 @@ export const NestedSetInput = ({
       ) {
         const QUERY: TypedDocumentNode<
           { items: { [idField]: string; [labelField]: string | null }[] },
-          { where: Record<string, any>; take: number; skip: number }
+          { where: Record<string, any>; take: number; skip: number, orderBy: Record<string, any>; }
         > = gql`
-              query NestedSetSelectMore($where: ${list.gqlNames.whereInputName}!, $take: Int!, $skip: Int!) {
-                items: ${list.gqlNames.listQueryName}(where: $where, take: $take, skip: $skip) {
+              query NestedSetSelectMore($where: ${list.gqlNames.whereInputName}!, $take: Int!, $skip: Int!, $orderBy: [${list.gqlNames.listOrderName}!]) {
+                items: ${list.gqlNames.listQueryName}(where: $where, take: $take, skip: $skip, orderBy: $orderBy) {
                   ${labelField}: ${list.labelField}
-                  ${idField}: id
+                  ${idField}: id,
+                  ${graphqlSelection}
                 }
               }
             `;
@@ -215,6 +226,7 @@ export const NestedSetInput = ({
             where,
             take: subsequentItemsToLoad,
             skip,
+            orderBy: orderByField
           },
         })
           .then(() => {
