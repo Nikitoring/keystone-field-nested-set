@@ -179,8 +179,7 @@ const NestedSetInput = _ref => {
       [path]: data[path],
       data
     };
-  })) || []; // if parentId get this entity
-
+  })) || [];
   let value = {};
 
   if (state !== null && state !== void 0 && state.parentId) {
@@ -308,8 +307,7 @@ const NestedSetInput = _ref => {
           });
           return;
       }
-    } // onChange(null);
-
+    }
 
     return;
   };
@@ -320,9 +318,7 @@ const NestedSetInput = _ref => {
     style: selectWidth
   }, core.jsx(LoadingIndicatorContext.Provider, {
     value: loadingIndicatorContextVal
-  }, core.jsx(fields.Select // this is necessary because react-select passes a second argument to onInputChange
-  // and useState setters log a warning if a second argument is passed
-  , {
+  }, core.jsx(fields.Select, {
     onInputChange: val => setSearch(val),
     placeholder: "Select",
     isLoading: loading || isLoading,

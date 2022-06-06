@@ -325,7 +325,7 @@ async function moveAsChildOf(parentId, current, options) {
     }
   });
 
-  if (parentNode) {
+  if (parentNode && parentNode.id) {
     const newDepth = parentNode[`${fieldKey}_depth`] + 1;
     await updateNode(parentNode[`${fieldKey}_right`], newDepth - current[`${fieldKey}_depth`], {
       context,
@@ -430,20 +430,22 @@ async function deleteResolver(current, options) {
     }
   });
 
-  for (const child of childrenTree) {
-    const {
-      depth
-    } = await moveAsChildOf(parentId, child, options);
+  if (childrenTree && childrenTree.length) {
+    for (const child of childrenTree) {
+      const {
+        depth
+      } = await moveAsChildOf(parentId, child, options);
 
-    if (depth) {
-      await context.prisma[bdTable].update({
-        where: {
-          id: child.id
-        },
-        data: {
-          [`${fieldKey}_depth`]: depth
-        }
-      });
+      if (depth) {
+        await context.prisma[bdTable].update({
+          where: {
+            id: child.id
+          },
+          data: {
+            [`${fieldKey}_depth`]: depth
+          }
+        });
+      }
     }
   }
 
@@ -459,11 +461,15 @@ async function deleteResolver(current, options) {
   });
   const first = currentNodeUpdated[`${fieldKey}_right`] + 1;
   const increment = currentNodeUpdated[`${fieldKey}_left`] - currentNodeUpdated[`${fieldKey}_right`] - 1;
-  await shiftLeftRghtValues(first, increment, {
-    context,
-    bdTable,
-    field: fieldKey
-  });
+
+  if (increment) {
+    await shiftLeftRghtValues(first, increment, {
+      context,
+      bdTable,
+      field: fieldKey
+    });
+  }
+
   return;
 }
 
@@ -488,7 +494,7 @@ async function shiftLeftRghtValues(first, increment, options) {
   });
   let transactions = [];
 
-  if (childrenTree.length) {
+  if (childrenTree && childrenTree.length) {
     for (const child of childrenTree) {
       transactions.push(context.prisma[bdTable].update({
         where: {
@@ -515,7 +521,7 @@ async function shiftLeftRghtValues(first, increment, options) {
     }
   });
 
-  if (parentTree.length) {
+  if (parentTree && parentTree.length) {
     for (const child of parentTree) {
       transactions.push(context.prisma[bdTable].update({
         where: {
@@ -687,8 +693,7 @@ async function updateEntityIsNullFields(data, context, listKey, fieldKey) {
       [`${fieldKey}_left`]: true,
       [`${fieldKey}_depth`]: true
     }
-  }); // parentId, prevSiblingOf, nextSiblingOf
-
+  });
   const isEntityWithField = entity[`${fieldKey}_right`] && entity[`${fieldKey}_left`];
 
   if (!root || root.id === entityId) {
