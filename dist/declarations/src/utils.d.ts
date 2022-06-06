@@ -66,9 +66,7 @@ export declare function moveNode(inputData: {
     [key: string]: any;
 }, context: KeystoneContext, listKey: string, fieldKey: string, current: {
     [key: string]: any;
-}): Promise<{
-    depth: any;
-} | null | undefined>;
+}): Promise<{} | null | undefined>;
 export declare function deleteResolver(current: {
     [key: string]: any;
 }, options: {

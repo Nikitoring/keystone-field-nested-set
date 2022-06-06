@@ -180,7 +180,15 @@ const NestedSetInput = _ref => {
   let value = {};
 
   if (state !== null && state !== void 0 && state.parentId) {
-    value = options.find(option => option.value === (state === null || state === void 0 ? void 0 : state.parentId));
+    value = options.find(option => option.value === state.parentId);
+  }
+
+  if (state !== null && state !== void 0 && state.prevSiblingOf) {
+    value = options.find(option => option.value === state.prevSiblingOf);
+  }
+
+  if (state !== null && state !== void 0 && state.nextSiblingOf) {
+    value = options.find(option => option.value === state.nextSiblingOf);
   }
 
   const loadingIndicatorContextVal = useMemo(() => ({
@@ -268,18 +276,6 @@ const NestedSetInput = _ref => {
     marginBottom: '1rem'
   };
 
-  const showError = value => {
-    if (!value || !Object.keys(value).length) {
-      return jsx("div", {
-        css: {
-          color: 'red'
-        }
-      }, "Please choose value.");
-    }
-
-    return;
-  };
-
   const prepareData = value => {
     if (value) {
       if (variant === '') {
@@ -308,9 +304,9 @@ const NestedSetInput = _ref => {
           });
           return;
       }
-    }
+    } // onChange(null);
 
-    onChange(null);
+
     return;
   };
 
@@ -336,7 +332,7 @@ const NestedSetInput = _ref => {
     isDisabled: isDisabled,
     portalMenu: true,
     isClearable: true
-  })), showError(value)), jsx("div", {
+  }))), jsx("div", {
     style: radioClass
   }, radioVariants.map((variant, index) => jsx("div", {
     style: radioButton,
@@ -431,11 +427,6 @@ const controller = config => {
     deserialize: data => {
       return data[config.path];
     },
-
-    validate(value) {
-      return !!value;
-    },
-
     serialize: value => {
       if (value && !value.value || !(value !== null && value !== void 0 && value.initialValue)) {
         return {

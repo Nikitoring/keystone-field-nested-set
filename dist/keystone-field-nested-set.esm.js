@@ -274,6 +274,7 @@ async function fetchTree(parentNode, context, listKey, fieldKey) {
 }
 
 async function moveNode(inputData, context, listKey, fieldKey, current) {
+  if (!inputData[fieldKey]) return {};
   if (!Object.keys(current).length) return null;
   const {
     parentId,
@@ -355,7 +356,7 @@ async function moveAsPrevSiblingOf(prevSiblingOfId, current, options) {
     }
   });
   const newDepth = prevSiblingNode[`${fieldKey}_depth`];
-  await updateNode(prevSiblingNode[`${fieldKey}_left`], newDepth - current[`${fieldKey}_depth`], {
+  await updateNode(prevSiblingNode[`${fieldKey}_left`], newDepth, {
     context,
     fieldKey,
     listKey
@@ -690,7 +691,7 @@ async function updateEntityIsNullFields(data, context, listKey, fieldKey) {
 
   const isEntityWithField = entity[`${fieldKey}_right`] && entity[`${fieldKey}_left`];
 
-  if (!root) {
+  if (!root || root.id === entityId) {
     await context.prisma[bdTable].update({
       where: {
         id: entityId
