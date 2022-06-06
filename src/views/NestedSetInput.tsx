@@ -180,7 +180,13 @@ export const NestedSetInput = ({
   // if parentId get this entity
   let value: { [key: string]: any } = {};
   if (state?.parentId) {
-    value = options.find(option => option.value === state?.parentId);
+    value = options.find(option => option.value === state.parentId);
+  }
+  if (state?.prevSiblingOf) {
+    value = options.find(option => option.value === state.prevSiblingOf);
+  }
+  if (state?.nextSiblingOf) {
+    value = options.find(option => option.value === state.nextSiblingOf);
   }
   const loadingIndicatorContextVal = useMemo(
     () => ({
@@ -282,14 +288,14 @@ export const NestedSetInput = ({
   };
   const showError = (value: { [key: string]: any }) => {
     if (!value || !Object.keys(value).length) {
+      if (!state || !options.length || (state.parentId === null && state.left === 1)) return;
       return <div css={{ color: 'red' }}>Please choose value.</div>;
     }
-    return 
+    return;
   };
 
   const prepareData = (value: { [key: string]: any }) => {
     if (value) {
-      
       if (variant === '') {
         onChange({ parentId: value.value });
         return;
@@ -306,7 +312,7 @@ export const NestedSetInput = ({
           return;
       }
     }
-    onChange(null);
+    // onChange(null);
     return;
   };
   return (
@@ -331,7 +337,7 @@ export const NestedSetInput = ({
             isClearable
           />
         </LoadingIndicatorContext.Provider>
-        {showError(value)}
+        {/* {showError(value)} */}
       </div>
       <div style={radioClass}>
         {radioVariants.map((variant, index) => (
