@@ -7,7 +7,6 @@ import { graphql } from '@keystone-6/core';
 function isRoot(data) {
   return !!(data.left === 1);
 }
-
 async function getRoot(context, field, listType) {
   const roots = await context.prisma[listType.toLowerCase()].findMany({
     where: {
@@ -28,7 +27,6 @@ async function getRoot(context, field, listType) {
 
   return roots[0];
 }
-
 async function createRoot() {
   return {
     left: 1,
@@ -835,6 +833,12 @@ const NestedSetFilterInput = graphql.inputObject({
 
 async function inputResolver(data, context, listKey, fieldKey) {
   if (data === null || data === undefined) {
+    const isRoot = await getRoot(context, fieldKey, listKey);
+
+    if (isRoot) {
+      return await insertLastChildOf(isRoot.id, context, listKey, fieldKey);
+    }
+
     return createRoot();
   }
 

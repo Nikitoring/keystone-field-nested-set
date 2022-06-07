@@ -2,6 +2,7 @@ import { KeystoneContext } from '@keystone-6/core/types';
 export declare function isRoot(data: {
     [key: string]: any;
 }): boolean;
+export declare function getRoot(context: KeystoneContext, field: string, listType: string): Promise<any>;
 export declare function createRoot(): Promise<{
     left: number;
     right: number;
