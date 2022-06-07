@@ -4,7 +4,7 @@ export function isRoot(data: { [key: string]: any }) {
   return !!(data.left === 1);
 }
 
-async function getRoot(context: KeystoneContext, field: string, listType: string) {
+export async function getRoot(context: KeystoneContext, field: string, listType: string) {
   const roots = await context.prisma[listType.toLowerCase()].findMany({
     where: {
       [`${field}_depth`]: 0,
