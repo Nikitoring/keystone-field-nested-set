@@ -381,6 +381,7 @@ async function moveAsChildOf(
   current: { [key: string]: any },
   options: { [key: string]: any }
 ) {
+  if (!parentId) return { depth: null };
   const { context, fieldKey, listKey } = options;
   const parentNode = await context.prisma[listKey.toLowerCase()].findUnique({
     where: { id: parentId },
@@ -461,6 +462,7 @@ export async function deleteResolver(
   current: { [key: string]: any },
   options: { [key: string]: any }
 ) {
+  if (!current.id) return;
   const { context, listKey, fieldKey } = options;
   const bdTable = listKey.toLowerCase();
   const left = current[`${fieldKey}_left`];
@@ -491,36 +493,27 @@ export async function deleteResolver(
       [`${fieldKey}_depth`]: true,
     },
   });
+  if (!parentId && childrenTree.length) {
+    const firstChild = childrenTree.find(child => Number(child.left) === right + 1);
+    if (firstChild) {
+      await updateNode(1, 0, { context, fieldKey, listKey }, firstChild);
+      return;
+    }
+  }
   if (childrenTree && childrenTree.length) {
     for (const child of childrenTree) {
-      const { depth } = await moveAsChildOf(parentId, child, options);
-      if (depth) {
+      const move = await moveAsChildOf(parentId, child, options);
+      if (move && move.depth !== null && move.depth !== undefined) {
         await context.prisma[bdTable].update({
           where: {
             id: child.id,
           },
           data: {
-            [`${fieldKey}_depth`]: depth,
+            [`${fieldKey}_depth`]: move.depth,
           },
         });
       }
     }
-  }
-  const currentNodeUpdated = await context.prisma[bdTable].findUnique({
-    where: {
-      id: current.id,
-    },
-    select: {
-      [`${fieldKey}_right`]: true,
-      [`${fieldKey}_left`]: true,
-      [`${fieldKey}_depth`]: true,
-    },
-  });
-  const first = currentNodeUpdated[`${fieldKey}_right`] + 1;
-  const increment =
-    currentNodeUpdated[`${fieldKey}_left`] - currentNodeUpdated[`${fieldKey}_right`] - 1;
-  if (increment) {
-    await shiftLeftRghtValues(first, increment, { context, bdTable, field: fieldKey });
   }
   return;
 }
