@@ -153,7 +153,8 @@ export const NestedSetInput = ({
       }),
     [link, list.gqlNames.listQueryName]
   );
-  const generateIndent = (label: string, depth = 0) => {
+  const generateIndent = (label: string, data: any) => {
+    const depth = data && data[path] ? data[path].depth : 0;
     let text = '';
     if (depth > 0) {
       for (let i = 0; i < depth; i++) {
@@ -172,7 +173,7 @@ export const NestedSetInput = ({
   const options =
     data?.items?.map(({ [idField]: value, [labelField]: label, ...data }) => ({
       value,
-      label: generateIndent(label || value, data[path].depth || 0),
+      label: generateIndent(label || value, data),
       [path]: data[path],
       data,
     })) || [];

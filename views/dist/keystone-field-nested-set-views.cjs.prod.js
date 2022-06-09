@@ -136,8 +136,8 @@ const NestedSetInput = _ref => {
     })
   }), [link, list.gqlNames.listQueryName]);
 
-  const generateIndent = function (label) {
-    let depth = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+  const generateIndent = (label, data) => {
+    const depth = data && data[path] ? data[path].depth : 0;
     let text = '';
 
     if (depth > 0) {
@@ -175,7 +175,7 @@ const NestedSetInput = _ref => {
 
     return {
       value,
-      label: generateIndent(label || value, data[path].depth || 0),
+      label: generateIndent(label || value, data),
       [path]: data[path],
       data
     };
