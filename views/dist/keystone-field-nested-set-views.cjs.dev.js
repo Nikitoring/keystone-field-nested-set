@@ -175,7 +175,7 @@ const NestedSetInput = _ref => {
 
     return {
       value,
-      label: generateIndent(label || value, data[path].depth),
+      label: generateIndent(label || value, data[path].depth || 0),
       [path]: data[path],
       data
     };

@@ -306,6 +306,9 @@ async function moveNode(inputData, context, listKey, fieldKey, current) {
 }
 
 async function moveAsChildOf(parentId, current, options) {
+  if (!parentId) return {
+    depth: null
+  };
   const {
     context,
     fieldKey,
@@ -393,6 +396,7 @@ async function moveAsNextSiblingOf(nextSiblingId, current, options) {
 }
 
 async function deleteResolver(current, options) {
+  if (!current.id) return;
   const {
     context,
     listKey,
@@ -430,42 +434,19 @@ async function deleteResolver(current, options) {
 
   if (childrenTree && childrenTree.length) {
     for (const child of childrenTree) {
-      const {
-        depth
-      } = await moveAsChildOf(parentId, child, options);
+      const move = await moveAsChildOf(parentId, child, options);
 
-      if (depth) {
+      if (move && move.depth !== null && move.depth !== undefined) {
         await context.prisma[bdTable].update({
           where: {
             id: child.id
           },
           data: {
-            [`${fieldKey}_depth`]: depth
+            [`${fieldKey}_depth`]: move.depth
           }
         });
       }
     }
-  }
-
-  const currentNodeUpdated = await context.prisma[bdTable].findUnique({
-    where: {
-      id: current.id
-    },
-    select: {
-      [`${fieldKey}_right`]: true,
-      [`${fieldKey}_left`]: true,
-      [`${fieldKey}_depth`]: true
-    }
-  });
-  const first = currentNodeUpdated[`${fieldKey}_right`] + 1;
-  const increment = currentNodeUpdated[`${fieldKey}_left`] - currentNodeUpdated[`${fieldKey}_right`] - 1;
-
-  if (increment) {
-    await shiftLeftRghtValues(first, increment, {
-      context,
-      bdTable,
-      field: fieldKey
-    });
   }
 
   return;
