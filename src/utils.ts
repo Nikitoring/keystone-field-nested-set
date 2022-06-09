@@ -493,13 +493,6 @@ export async function deleteResolver(
       [`${fieldKey}_depth`]: true,
     },
   });
-  if (!parentId && childrenTree.length) {
-    const firstChild = childrenTree.find(child => Number(child.left) === right + 1);
-    if (firstChild) {
-      await updateNode(1, 0, { context, fieldKey, listKey }, firstChild);
-      return;
-    }
-  }
   if (childrenTree && childrenTree.length) {
     for (const child of childrenTree) {
       const move = await moveAsChildOf(parentId, child, options);
@@ -515,6 +508,7 @@ export async function deleteResolver(
       }
     }
   }
+
   return;
 }
 
