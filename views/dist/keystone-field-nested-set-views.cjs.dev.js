@@ -177,6 +177,7 @@ const NestedSetInput = _ref => {
       value,
       label: generateIndent(label || value, data),
       [path]: data[path],
+      isDisabled: !data[path] ? true : false,
       data
     };
   })) || [];
@@ -244,7 +245,7 @@ const NestedSetInput = _ref => {
 
   const radioVariants = [{
     label: 'Parent',
-    value: 'parenId',
+    value: 'parentId',
     checked: true,
     disabled: false
   }, {

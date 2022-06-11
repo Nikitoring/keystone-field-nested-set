@@ -281,6 +281,7 @@ async function moveNode(inputData, context, listKey, fieldKey, current) {
   } = inputData[fieldKey];
 
   if (parentId) {
+    if (parentId === current.id) throw new Error(`You can't choose the same entity`);
     return await moveAsChildOf(parentId, current, {
       context,
       fieldKey,
@@ -289,6 +290,7 @@ async function moveNode(inputData, context, listKey, fieldKey, current) {
   }
 
   if (prevSiblingOf) {
+    if (prevSiblingOf === current.id) throw new Error(`You can't choose the same entity`);
     return await moveAsPrevSiblingOf(prevSiblingOf, current, {
       context,
       fieldKey,
@@ -297,6 +299,7 @@ async function moveNode(inputData, context, listKey, fieldKey, current) {
   }
 
   if (nextSiblingOf) {
+    if (nextSiblingOf === current.id) throw new Error(`You can't choose the same entity`);
     return await moveAsNextSiblingOf(nextSiblingOf, current, {
       context,
       fieldKey,
@@ -667,10 +670,10 @@ async function updateEntityIsNullFields(data, context, listKey, fieldKey) {
       id: entityId
     },
     select: {
-      id: true,
-      [`${fieldKey}_right`]: true,
-      [`${fieldKey}_left`]: true,
-      [`${fieldKey}_depth`]: true
+      id: true // [`${fieldKey}_right`]: true,
+      // [`${fieldKey}_left`]: true,
+      // [`${fieldKey}_depth`]: true,
+
     }
   });
   const isEntityWithField = entity[`${fieldKey}_right`] && entity[`${fieldKey}_left`];
@@ -687,6 +690,8 @@ async function updateEntityIsNullFields(data, context, listKey, fieldKey) {
       }
     });
   }
+
+  console.log('isEntityWithField', isEntityWithField, root, entityId, root.id !== entityId);
 
   if (!isEntityWithField && root && root.id !== entityId) {
     const {
@@ -716,6 +721,39 @@ async function updateEntityIsNullFields(data, context, listKey, fieldKey) {
     case 'nextSiblingOf':
       return await insertNextSiblingOf(entityId, context, listKey, fieldKey);
   }
+}
+async function nodeIsInTree(data, options) {
+  const {
+    fieldKey,
+    listKey,
+    context
+  } = options;
+  const bdTable = listKey.toLowerCase();
+  let entityId = '';
+
+  for (const [key, value] of Object.entries(data)) {
+    if (value) {
+      entityId = value;
+    }
+  }
+
+  const entity = await context.prisma[bdTable].findUnique({
+    where: {
+      id: entityId
+    },
+    select: {
+      id: true,
+      [`${fieldKey}_right`]: true,
+      [`${fieldKey}_left`]: true,
+      [`${fieldKey}_depth`]: true
+    }
+  });
+
+  if (!entity[`${fieldKey}_left`]) {
+    throw new Error(`Please add this entity ${entityId} in tree`);
+  }
+
+  return true;
 }
 
 const views = path.join(path.dirname(__dirname), 'views');
@@ -937,6 +975,16 @@ const nestedSet = function () {
             resolvedData,
             context
           } = _ref2;
+
+          if (operation === 'create') {
+            if (inputData[fieldKey] && Object.keys(inputData[fieldKey]).length) {
+              return await nodeIsInTree(inputData[fieldKey], {
+                context,
+                listKey,
+                fieldKey
+              });
+            }
+          }
 
           if (operation === 'update') {
             let currentItem = {};

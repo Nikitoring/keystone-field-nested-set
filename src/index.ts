@@ -26,6 +26,7 @@ import {
   deleteResolver,
   updateEntityIsNullFields,
   getRoot,
+  nodeIsInTree,
 } from './utils';
 
 import { Path } from 'graphql/jsutils/Path';
@@ -244,6 +245,11 @@ export const nestedSet =
           resolvedData,
           context,
         }) => {
+          if (operation === 'create') {
+            if (inputData[fieldKey] && Object.keys(inputData[fieldKey]).length) {
+              return await nodeIsInTree(inputData[fieldKey], { context, listKey, fieldKey });
+            }
+          }
           if (operation === 'update') {
             let currentItem = {};
             if (

@@ -20,7 +20,7 @@ const idField = '____id____';
 
 const labelField = '____label____';
 
-const nestedSetField = '____nestedSet____';
+let nestedSetField = '____nestedSet____';
 
 const LoadingIndicatorContext = createContext<{
   count: number;
@@ -175,6 +175,7 @@ export const NestedSetInput = ({
       value,
       label: generateIndent(label || value, data),
       [path]: data[path],
+      isDisabled: !data[path] ? true : false,
       data,
     })) || [];
 
@@ -251,7 +252,7 @@ export const NestedSetInput = ({
   const radioVariants = [
     {
       label: 'Parent',
-      value: 'parenId',
+      value: 'parentId',
       checked: true,
       disabled: false,
     },

@@ -83,4 +83,7 @@ export declare function updateEntityIsNullFields(data: NestedSetFieldInputType, 
     right: any;
     depth: any;
 } | undefined>;
+export declare function nodeIsInTree(data: NestedSetFieldInputType, options: {
+    [key: string]: any;
+}): Promise<boolean>;
 export {};

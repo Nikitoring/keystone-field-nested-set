@@ -366,12 +366,15 @@ export async function moveNode(
   if (!Object.keys(current).length) return null;
   const { parentId, prevSiblingOf, nextSiblingOf } = inputData[fieldKey];
   if (parentId) {
+    if (parentId === current.id) throw new Error(`You can't choose the same entity`);
     return await moveAsChildOf(parentId, current, { context, fieldKey, listKey });
   }
   if (prevSiblingOf) {
+    if (prevSiblingOf === current.id) throw new Error(`You can't choose the same entity`);
     return await moveAsPrevSiblingOf(prevSiblingOf, current, { context, fieldKey, listKey });
   }
   if (nextSiblingOf) {
+    if (nextSiblingOf === current.id) throw new Error(`You can't choose the same entity`);
     return await moveAsNextSiblingOf(nextSiblingOf, current, { context, fieldKey, listKey });
   }
 }
@@ -744,9 +747,9 @@ export async function updateEntityIsNullFields(
     where: { id: entityId },
     select: {
       id: true,
-      [`${fieldKey}_right`]: true,
-      [`${fieldKey}_left`]: true,
-      [`${fieldKey}_depth`]: true,
+      // [`${fieldKey}_right`]: true,
+      // [`${fieldKey}_left`]: true,
+      // [`${fieldKey}_depth`]: true,
     },
   });
   const isEntityWithField = entity[`${fieldKey}_right`] && entity[`${fieldKey}_left`];
@@ -762,6 +765,7 @@ export async function updateEntityIsNullFields(
       },
     });
   }
+  console.log('isEntityWithField', isEntityWithField, root, entityId, root.id !== entityId);
   if (!isEntityWithField && root && root.id !== entityId) {
     const { left, right, depth } = await insertLastChildOf(root.id, context, listKey, fieldKey);
     context.prisma[bdTable].update({
@@ -785,4 +789,27 @@ export async function updateEntityIsNullFields(
     default:
       break;
   }
+}
+export async function nodeIsInTree(data: NestedSetFieldInputType, options: { [key: string]: any }) {
+  const { fieldKey, listKey, context } = options;
+  const bdTable = listKey.toLowerCase();
+  let entityId = '';
+  for (const [key, value] of Object.entries(data)) {
+    if (value) {
+      entityId = value;
+    }
+  }
+  const entity = await context.prisma[bdTable].findUnique({
+    where: { id: entityId },
+    select: {
+      id: true,
+      [`${fieldKey}_right`]: true,
+      [`${fieldKey}_left`]: true,
+      [`${fieldKey}_depth`]: true,
+    },
+  });
+  if (!entity[`${fieldKey}_left`]) {
+    throw new Error(`Please add this entity ${entityId} in tree`);
+  }
+  return true;
 }
