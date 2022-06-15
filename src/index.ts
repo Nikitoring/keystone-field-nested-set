@@ -151,14 +151,12 @@ async function inputResolver(
 }
 async function updateEntityIsNull(
   data: NestedSetFieldInputType,
+  id: ID,
   context: KeystoneContext,
   listKey: string,
   fieldKey: string
 ) {
-  if (data === null || data === undefined) {
-    return null;
-  }
-  return await updateEntityIsNullFields(data, context, listKey, fieldKey);
+  return await updateEntityIsNullFields(data, id, context, listKey, fieldKey);
 }
 
 async function filterResolver(
@@ -247,7 +245,7 @@ export const nestedSet =
         }) => {
           if (operation === 'create') {
             if (inputData[fieldKey] && Object.keys(inputData[fieldKey]).length) {
-              return await nodeIsInTree(inputData[fieldKey], { context, listKey, fieldKey });
+              await nodeIsInTree(inputData[fieldKey], { context, listKey, fieldKey });
             }
           }
           if (operation === 'update') {
@@ -266,7 +264,7 @@ export const nestedSet =
               };
             }
             if (!Object.keys(currentItem).length) {
-              return updateEntityIsNull(inputData[fieldKey], context, listKey, fieldKey);
+              return updateEntityIsNull(inputData[fieldKey], item.id, context, listKey, fieldKey);
             }
             return moveNode(inputData, context, listKey, fieldKey, currentItem);
           }

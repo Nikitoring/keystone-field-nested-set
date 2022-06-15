@@ -12,9 +12,6 @@ export async function getRoot(context: KeystoneContext, field: string, listType:
     },
     select: {
       id: true,
-      [`${field}_depth`]: true,
-      [`${field}_left`]: true,
-      [`${field}_right`]: true,
     },
   });
   if (!roots) {
@@ -224,7 +221,6 @@ export async function insertLastChildOf(
     },
   });
   if (!parentNode) return false;
-
   const tree = await fetchTree(parentNode, context, listKey, fieldKey);
   let transactions = [];
   for (const node of tree) {
@@ -453,7 +449,7 @@ async function moveAsNextSiblingOf(
   const newDepth = prevSiblingNode[`${fieldKey}_depth`];
   await updateNode(
     prevSiblingNode[`${fieldKey}_right`] + 1,
-    newDepth - current[`${fieldKey}_depth`],
+    newDepth,
     { context, fieldKey, listKey },
     current
   );
@@ -729,12 +725,27 @@ type NestedSetFieldInputType = {
 
 export async function updateEntityIsNullFields(
   data: NestedSetFieldInputType,
+  id: ID,
   context: KeystoneContext,
   listKey: string,
   fieldKey: string
 ) {
   const bdTable = listKey.toLowerCase();
   const root = await getRoot(context, fieldKey, listKey);
+  if (!data && root.id) {
+    const { left, right, depth } = await insertLastChildOf(root.id, context, listKey, fieldKey);
+    return {
+      left,
+      right,
+      depth,
+    };
+  } else if (!root.id) {
+    return {
+      left: 1,
+      right: 2,
+      depth: 0,
+    };
+  }
   let entityId = '';
   let entityType = '';
   for (const [key, value] of Object.entries(data)) {
@@ -747,25 +758,19 @@ export async function updateEntityIsNullFields(
     where: { id: entityId },
     select: {
       id: true,
-      // [`${fieldKey}_right`]: true,
-      // [`${fieldKey}_left`]: true,
-      // [`${fieldKey}_depth`]: true,
+      [`${fieldKey}_right`]: true,
+      [`${fieldKey}_left`]: true,
+      [`${fieldKey}_depth`]: true,
     },
   });
   const isEntityWithField = entity[`${fieldKey}_right`] && entity[`${fieldKey}_left`];
   if (!root || root.id === entityId) {
-    await context.prisma[bdTable].update({
-      where: {
-        id: entityId,
-      },
-      data: {
-        [`${fieldKey}_left`]: 1,
-        [`${fieldKey}_right`]: 2,
-        [`${fieldKey}_depth`]: 0,
-      },
-    });
+    return {
+      left: 1,
+      right: 2,
+      depth: 0,
+    };
   }
-  console.log('isEntityWithField', isEntityWithField, root, entityId, root.id !== entityId);
   if (!isEntityWithField && root && root.id !== entityId) {
     const { left, right, depth } = await insertLastChildOf(root.id, context, listKey, fieldKey);
     context.prisma[bdTable].update({
@@ -778,6 +783,11 @@ export async function updateEntityIsNullFields(
         [`${fieldKey}_depth`]: depth,
       },
     });
+    return {
+      left,
+      right,
+      depth,
+    };
   }
   switch (entityType) {
     case 'parentId':
@@ -811,5 +821,5 @@ export async function nodeIsInTree(data: NestedSetFieldInputType, options: { [ke
   if (!entity[`${fieldKey}_left`]) {
     throw new Error(`Please add this entity ${entityId} in tree`);
   }
-  return true;
+  return;
 }
