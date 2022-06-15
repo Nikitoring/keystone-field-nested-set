@@ -14,10 +14,7 @@ async function getRoot(context, field, listType) {
       [`${field}_left`]: 1
     },
     select: {
-      id: true,
-      [`${field}_depth`]: true,
-      [`${field}_left`]: true,
-      [`${field}_right`]: true
+      id: true
     }
   });
 
@@ -388,7 +385,7 @@ async function moveAsNextSiblingOf(nextSiblingId, current, options) {
     }
   });
   const newDepth = prevSiblingNode[`${fieldKey}_depth`];
-  await updateNode(prevSiblingNode[`${fieldKey}_right`] + 1, newDepth - current[`${fieldKey}_depth`], {
+  await updateNode(prevSiblingNode[`${fieldKey}_right`] + 1, newDepth, {
     context,
     fieldKey,
     listKey
@@ -652,9 +649,29 @@ async function shiftLeftRightRange(first, last, increment, options) {
   return await context.prisma.$transaction(transactions);
 }
 
-async function updateEntityIsNullFields(data, context, listKey, fieldKey) {
+async function updateEntityIsNullFields(data, id, context, listKey, fieldKey) {
   const bdTable = listKey.toLowerCase();
   const root = await getRoot(context, fieldKey, listKey);
+
+  if (!data && root.id) {
+    const {
+      left,
+      right,
+      depth
+    } = await insertLastChildOf(root.id, context, listKey, fieldKey);
+    return {
+      left,
+      right,
+      depth
+    };
+  } else if (!root.id) {
+    return {
+      left: 1,
+      right: 2,
+      depth: 0
+    };
+  }
+
   let entityId = '';
   let entityType = '';
 
@@ -670,28 +687,21 @@ async function updateEntityIsNullFields(data, context, listKey, fieldKey) {
       id: entityId
     },
     select: {
-      id: true // [`${fieldKey}_right`]: true,
-      // [`${fieldKey}_left`]: true,
-      // [`${fieldKey}_depth`]: true,
-
+      id: true,
+      [`${fieldKey}_right`]: true,
+      [`${fieldKey}_left`]: true,
+      [`${fieldKey}_depth`]: true
     }
   });
   const isEntityWithField = entity[`${fieldKey}_right`] && entity[`${fieldKey}_left`];
 
   if (!root || root.id === entityId) {
-    await context.prisma[bdTable].update({
-      where: {
-        id: entityId
-      },
-      data: {
-        [`${fieldKey}_left`]: 1,
-        [`${fieldKey}_right`]: 2,
-        [`${fieldKey}_depth`]: 0
-      }
-    });
+    return {
+      left: 1,
+      right: 2,
+      depth: 0
+    };
   }
-
-  console.log('isEntityWithField', isEntityWithField, root, entityId, root.id !== entityId);
 
   if (!isEntityWithField && root && root.id !== entityId) {
     const {
@@ -709,6 +719,11 @@ async function updateEntityIsNullFields(data, context, listKey, fieldKey) {
         [`${fieldKey}_depth`]: depth
       }
     });
+    return {
+      left,
+      right,
+      depth
+    };
   }
 
   switch (entityType) {
@@ -753,7 +768,7 @@ async function nodeIsInTree(data, options) {
     throw new Error(`Please add this entity ${entityId} in tree`);
   }
 
-  return true;
+  return;
 }
 
 const views = path.join(path.dirname(__dirname), 'views');
@@ -882,12 +897,8 @@ async function inputResolver(data, context, listKey, fieldKey) {
   return data;
 }
 
-async function updateEntityIsNull(data, context, listKey, fieldKey) {
-  if (data === null || data === undefined) {
-    return null;
-  }
-
-  return await updateEntityIsNullFields(data, context, listKey, fieldKey);
+async function updateEntityIsNull(data, id, context, listKey, fieldKey) {
+  return await updateEntityIsNullFields(data, id, context, listKey, fieldKey);
 }
 
 async function filterResolver(data, context, listKey, fieldKey) {
@@ -978,7 +989,7 @@ const nestedSet = function () {
 
           if (operation === 'create') {
             if (inputData[fieldKey] && Object.keys(inputData[fieldKey]).length) {
-              return await nodeIsInTree(inputData[fieldKey], {
+              await nodeIsInTree(inputData[fieldKey], {
                 context,
                 listKey,
                 fieldKey
@@ -999,7 +1010,7 @@ const nestedSet = function () {
             }
 
             if (!Object.keys(currentItem).length) {
-              return updateEntityIsNull(inputData[fieldKey], context, listKey, fieldKey);
+              return updateEntityIsNull(inputData[fieldKey], item.id, context, listKey, fieldKey);
             }
 
             return moveNode(inputData, context, listKey, fieldKey, currentItem);

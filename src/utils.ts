@@ -725,7 +725,7 @@ type NestedSetFieldInputType = {
 
 export async function updateEntityIsNullFields(
   data: NestedSetFieldInputType,
-  id: ID,
+  id: string,
   context: KeystoneContext,
   listKey: string,
   fieldKey: string
