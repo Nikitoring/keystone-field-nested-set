@@ -7,6 +7,15 @@ import { graphql } from '@keystone-6/core';
 function isRoot(data) {
   return !!(data.left === 1);
 }
+
+function isAncestorOf(parenNode, current) {
+  return parenNode.left > current.left && parenNode.right < current.right;
+}
+
+function isEqualTo(parenNode, current) {
+  return Number(parenNode.left) === Number(current.left) && Number(parenNode.right) === Number(current.right);
+}
+
 async function getRoot(context, field, listType) {
   const roots = await context.prisma[listType.toLowerCase()].findMany({
     where: {
@@ -325,6 +334,20 @@ async function moveAsChildOf(parentId, current, options) {
       [`${fieldKey}_depth`]: true
     }
   });
+  let prepareParentNode = {
+    right: parentNode[`${fieldKey}_right`],
+    left: parentNode[`${fieldKey}_left`],
+    depth: parentNode[`${fieldKey}_depth`]
+  };
+  let currentNode = {
+    right: current[`${fieldKey}_right`],
+    left: current[`${fieldKey}_left`],
+    depth: current[`${fieldKey}_depth`]
+  };
+
+  if (parentId === current.id || isAncestorOf(prepareParentNode, currentNode) || isEqualTo(prepareParentNode, currentNode)) {
+    throw new Error('Cannot move node as first child of itself or into a descendant');
+  }
 
   if (parentNode && parentNode.id) {
     const newDepth = parentNode[`${fieldKey}_depth`] + 1;
@@ -356,8 +379,23 @@ async function moveAsPrevSiblingOf(prevSiblingOfId, current, options) {
       [`${fieldKey}_depth`]: true
     }
   });
+  let parentNode = {
+    right: prevSiblingNode[`${fieldKey}_right`],
+    left: prevSiblingNode[`${fieldKey}_left`],
+    depth: prevSiblingNode[`${fieldKey}_depth`]
+  };
+  let currentNode = {
+    right: current[`${fieldKey}_right`],
+    left: current[`${fieldKey}_left`],
+    depth: current[`${fieldKey}_depth`]
+  };
+
+  if (prevSiblingOfId === current.id || isAncestorOf(parentNode, currentNode) || isEqualTo(parentNode, currentNode)) {
+    throw new Error('Cannot move node as previous sibling of itself');
+  }
+
   const newDepth = prevSiblingNode[`${fieldKey}_depth`];
-  await updateNode(prevSiblingNode[`${fieldKey}_left`], newDepth, {
+  await updateNode(prevSiblingNode[`${fieldKey}_left`], newDepth - current[`${fieldKey}_depth`], {
     context,
     fieldKey,
     listKey
@@ -384,8 +422,23 @@ async function moveAsNextSiblingOf(nextSiblingId, current, options) {
       [`${fieldKey}_depth`]: true
     }
   });
+  let parentNode = {
+    right: prevSiblingNode[`${fieldKey}_right`],
+    left: prevSiblingNode[`${fieldKey}_left`],
+    depth: prevSiblingNode[`${fieldKey}_depth`]
+  };
+  let currentNode = {
+    right: current[`${fieldKey}_right`],
+    left: current[`${fieldKey}_left`],
+    depth: current[`${fieldKey}_depth`]
+  };
+
+  if (nextSiblingId === current.id || isAncestorOf(parentNode, currentNode) || isEqualTo(parentNode, currentNode)) {
+    throw new Error('Cannot move node as next sibling of itself');
+  }
+
   const newDepth = prevSiblingNode[`${fieldKey}_depth`];
-  await updateNode(prevSiblingNode[`${fieldKey}_right`] + 1, newDepth, {
+  await updateNode(prevSiblingNode[`${fieldKey}_right`] + 1, newDepth - current[`${fieldKey}_depth`], {
     context,
     fieldKey,
     listKey
