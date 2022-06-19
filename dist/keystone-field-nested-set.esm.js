@@ -28,7 +28,7 @@ async function getRoot(context, field, listType) {
   });
 
   if (!roots) {
-    return false;
+    return {};
   }
 
   return roots[0];
@@ -702,11 +702,11 @@ async function shiftLeftRightRange(first, last, increment, options) {
   return await context.prisma.$transaction(transactions);
 }
 
-async function updateEntityIsNullFields(data, id, context, listKey, fieldKey) {
+async function updateEntityIsNullFields(data, context, listKey, fieldKey) {
   const bdTable = listKey.toLowerCase();
   const root = await getRoot(context, fieldKey, listKey);
 
-  if (!data && root.id) {
+  if (!data && root && root.id) {
     const {
       left,
       right,
@@ -717,12 +717,10 @@ async function updateEntityIsNullFields(data, id, context, listKey, fieldKey) {
       right,
       depth
     };
-  } else if (!root.id) {
-    return {
-      left: 1,
-      right: 2,
-      depth: 0
-    };
+  }
+
+  if (!data && !root) {
+    throw new Error('Please< create root before update this entity');
   }
 
   let entityId = '';
@@ -746,32 +744,14 @@ async function updateEntityIsNullFields(data, id, context, listKey, fieldKey) {
       [`${fieldKey}_depth`]: true
     }
   });
-  const isEntityWithField = entity[`${fieldKey}_right`] && entity[`${fieldKey}_left`];
+  const isEntityWithField = !!(entity[`${fieldKey}_right`] && entity[`${fieldKey}_left`]);
 
-  if (!root || root.id === entityId) {
-    return {
-      left: 1,
-      right: 2,
-      depth: 0
-    };
-  }
-
-  if (!isEntityWithField && root && root.id !== entityId) {
+  if (!isEntityWithField && root) {
     const {
       left,
       right,
       depth
     } = await insertLastChildOf(root.id, context, listKey, fieldKey);
-    context.prisma[bdTable].update({
-      where: {
-        id: entityId
-      },
-      data: {
-        [`${fieldKey}_left`]: left,
-        [`${fieldKey}_right`]: right,
-        [`${fieldKey}_depth`]: depth
-      }
-    });
     return {
       left,
       right,
@@ -951,7 +931,7 @@ async function inputResolver(data, context, listKey, fieldKey) {
 }
 
 async function updateEntityIsNull(data, id, context, listKey, fieldKey) {
-  return await updateEntityIsNullFields(data, id, context, listKey, fieldKey);
+  return await updateEntityIsNullFields(data, id, context, listKey);
 }
 
 async function filterResolver(data, context, listKey, fieldKey) {
@@ -1063,7 +1043,7 @@ const nestedSet = function () {
             }
 
             if (!Object.keys(currentItem).length) {
-              return updateEntityIsNull(inputData[fieldKey], item.id, context, listKey, fieldKey);
+              return updateEntityIsNull(inputData[fieldKey], item.id, context, listKey);
             }
 
             return moveNode(inputData, context, listKey, fieldKey, currentItem);

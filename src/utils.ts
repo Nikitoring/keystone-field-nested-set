@@ -31,7 +31,7 @@ export async function getRoot(context: KeystoneContext, field: string, listType:
     },
   });
   if (!roots) {
-    return false;
+    return {};
   }
   return roots[0];
 }
@@ -792,26 +792,22 @@ type NestedSetFieldInputType = {
 
 export async function updateEntityIsNullFields(
   data: NestedSetFieldInputType,
-  id: string,
   context: KeystoneContext,
   listKey: string,
   fieldKey: string
 ) {
   const bdTable = listKey.toLowerCase();
   const root = await getRoot(context, fieldKey, listKey);
-  if (!data && root.id) {
+  if (!data && root && root.id) {
     const { left, right, depth } = await insertLastChildOf(root.id, context, listKey, fieldKey);
     return {
       left,
       right,
       depth,
     };
-  } else if (!root.id) {
-    return {
-      left: 1,
-      right: 2,
-      depth: 0,
-    };
+  }
+  if (!data && !root) {
+    throw new Error('Please< create root before update this entity');
   }
   let entityId = '';
   let entityType = '';
@@ -830,26 +826,9 @@ export async function updateEntityIsNullFields(
       [`${fieldKey}_depth`]: true,
     },
   });
-  const isEntityWithField = entity[`${fieldKey}_right`] && entity[`${fieldKey}_left`];
-  if (!root || root.id === entityId) {
-    return {
-      left: 1,
-      right: 2,
-      depth: 0,
-    };
-  }
-  if (!isEntityWithField && root && root.id !== entityId) {
+  const isEntityWithField = !!(entity[`${fieldKey}_right`] && entity[`${fieldKey}_left`]);
+  if (!isEntityWithField && root) {
     const { left, right, depth } = await insertLastChildOf(root.id, context, listKey, fieldKey);
-    context.prisma[bdTable].update({
-      where: {
-        id: entityId,
-      },
-      data: {
-        [`${fieldKey}_left`]: left,
-        [`${fieldKey}_right`]: right,
-        [`${fieldKey}_depth`]: depth,
-      },
-    });
     return {
       left,
       right,

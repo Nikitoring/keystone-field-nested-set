@@ -78,7 +78,7 @@ declare type NestedSetFieldInputType = {
     prevSiblingOf?: string;
     nextSiblingOf?: string;
 };
-export declare function updateEntityIsNullFields(data: NestedSetFieldInputType, id: string, context: KeystoneContext, listKey: string, fieldKey: string): Promise<false | {
+export declare function updateEntityIsNullFields(data: NestedSetFieldInputType, context: KeystoneContext, listKey: string, fieldKey: string): Promise<false | {
     left: any;
     right: any;
     depth: any;
