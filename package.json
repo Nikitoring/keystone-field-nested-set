@@ -1,6 +1,6 @@
 {
   "name": "keystone-field-nested-set",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "description": "nested set field for keystonejs",
   "main": "dist/keystone-field-nested-set.cjs.js",
   "module": "dist/keystone-field-nested-set.esm.js",
@@ -36,6 +36,7 @@
     "graphql": "^15.7.2",
     "graphql-tag": "^2.12.5",
     "intersection-observer": "^0.12.0",
+    "jest": "^28.1.1",
     "next": "^12.0.4",
     "prettier": "^2.4.1",
     "react": "^17.0.2",
