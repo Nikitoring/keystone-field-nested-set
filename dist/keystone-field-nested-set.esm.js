@@ -1043,7 +1043,7 @@ const nestedSet = function () {
             }
 
             if (!Object.keys(currentItem).length) {
-              return updateEntityIsNull(inputData[fieldKey], item.id, context, listKey);
+              return updateEntityIsNull(inputData[fieldKey], context, listKey, fieldKey);
             }
 
             return moveNode(inputData, context, listKey, fieldKey, currentItem);
