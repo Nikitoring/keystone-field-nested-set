@@ -1,5 +1,9 @@
 import { KeystoneContext } from '@keystone-6/core/types';
 
+function listNameToPrismaModel(listKey: string) {
+  return listKey[0].toLowerCase() + listKey.slice(1);
+}
+
 export function isRoot(data: { [key: string]: any }) {
   return !!(data.left === 1);
 }
@@ -21,7 +25,7 @@ function isEqualTo(parenNode: NodeType, current: NodeType) {
 }
 
 export async function getRoot(context: KeystoneContext, field: string, listType: string) {
-  const roots = await context.prisma[listType.toLowerCase()].findMany({
+  const roots = await context.prisma[listNameToPrismaModel(listType)].findMany({
     where: {
       [`${field}_depth`]: 0,
       [`${field}_left`]: 1,
@@ -61,7 +65,7 @@ export async function getParentId(
   if (isRoot(data)) {
     return null;
   }
-  const dbTable = listType.toLowerCase();
+  const dbTable = listNameToPrismaModel(listType);
   const parent = await context.prisma[dbTable].findMany({
     where: {
       [`${field}_depth`]: data.depth - 1,
@@ -91,7 +95,7 @@ export async function getParent(
   if (isRoot(data)) {
     return null;
   }
-  const dbTable = listType.toLowerCase();
+  const dbTable = listNameToPrismaModel(listType);
   const parent = await context.prisma[dbTable].findMany({
     where: {
       [`${field}_depth`]: data[`${field}_depth`] - 1,
@@ -226,7 +230,7 @@ export async function insertLastChildOf(
   listKey: string,
   fieldKey: string
 ) {
-  const bdTable = listKey.toLowerCase();
+  const bdTable = listNameToPrismaModel(listKey);
   const parentNode = await context.prisma[bdTable].findUnique({
     where: { id: parentId },
     select: {
@@ -283,7 +287,7 @@ export async function insertNextSiblingOf(
   listKey: string,
   fieldKey: string
 ) {
-  const bdTable = listKey.toLowerCase();
+  const bdTable = listNameToPrismaModel(listKey);
   const destNode = await context.prisma[bdTable].findUnique({
     where: { id: nextSiblingId },
     select: {
@@ -314,7 +318,7 @@ export async function insertPrevSiblingOf(
   listKey: string,
   fieldKey: string
 ) {
-  const bdTable = listKey.toLowerCase();
+  const bdTable = listNameToPrismaModel(listKey);
   const destNode = await context.prisma[bdTable].findUnique({
     where: { id: nextSiblingId },
     select: {
@@ -530,7 +534,7 @@ export async function deleteResolver(
 ) {
   if (!current.id) return;
   const { context, listKey, fieldKey } = options;
-  const bdTable = listKey.toLowerCase();
+  const bdTable = listNameToPrismaModel(listKey);
   const left = current[`${fieldKey}_left`];
   const right = current[`${fieldKey}_right`];
   const depth = current[`${fieldKey}_depth`];
@@ -651,7 +655,7 @@ async function updateNode(
   current: { [key: string]: any }
 ) {
   const { context, fieldKey, listKey } = options;
-  const bdTable = listKey.toLowerCase();
+  const bdTable = listNameToPrismaModel(listKey);
   let left = current[`${fieldKey}_left`];
   let right = current[`${fieldKey}_right`];
   const treeSize = right - left + 1;
@@ -710,7 +714,7 @@ async function shiftLeftRightRange(
   options: { [key: string]: any }
 ) {
   const { context, fieldKey, listKey } = options;
-  const bdTable = listKey.toLowerCase();
+  const bdTable = listNameToPrismaModel(listKey);
   const transactions = [];
   const leftTree = await context.prisma[bdTable].findMany({
     where: {
@@ -796,7 +800,7 @@ export async function updateEntityIsNullFields(
   listKey: string,
   fieldKey: string
 ) {
-  const bdTable = listKey.toLowerCase();
+  const bdTable = listNameToPrismaModel(listKey);
   const root = await getRoot(context, fieldKey, listKey);
   if (!data && root && root.id) {
     const { left, right, depth } = await insertLastChildOf(root.id, context, listKey, fieldKey);
@@ -848,7 +852,7 @@ export async function updateEntityIsNullFields(
 }
 export async function nodeIsInTree(data: NestedSetFieldInputType, options: { [key: string]: any }) {
   const { fieldKey, listKey, context } = options;
-  const bdTable = listKey.toLowerCase();
+  const bdTable = listNameToPrismaModel(listKey);
   let entityId = '';
   for (const [key, value] of Object.entries(data)) {
     if (value) {

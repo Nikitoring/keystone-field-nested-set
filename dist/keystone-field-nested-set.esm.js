@@ -4,6 +4,10 @@ import path from 'path';
 import { fieldType, orderDirectionEnum } from '@keystone-6/core/types';
 import { graphql } from '@keystone-6/core';
 
+function listNameToPrismaModel(listKey) {
+  return listKey[0].toLowerCase() + listKey.slice(1);
+}
+
 function isRoot(data) {
   return !!(data.left === 1);
 }
@@ -17,7 +21,7 @@ function isEqualTo(parenNode, current) {
 }
 
 async function getRoot(context, field, listType) {
-  const roots = await context.prisma[listType.toLowerCase()].findMany({
+  const roots = await context.prisma[listNameToPrismaModel(listType)].findMany({
     where: {
       [`${field}_depth`]: 0,
       [`${field}_left`]: 1
@@ -51,7 +55,7 @@ async function getParentId(data, context, field, listType) {
     return null;
   }
 
-  const dbTable = listType.toLowerCase();
+  const dbTable = listNameToPrismaModel(listType);
   const parent = await context.prisma[dbTable].findMany({
     where: {
       [`${field}_depth`]: data.depth - 1,
@@ -151,7 +155,7 @@ async function getParentOf(parentId, context, listKey, fieldKey) {
   };
 }
 async function insertLastChildOf(parentId, context, listKey, fieldKey) {
-  const bdTable = listKey.toLowerCase();
+  const bdTable = listNameToPrismaModel(listKey);
   const parentNode = await context.prisma[bdTable].findUnique({
     where: {
       id: parentId
@@ -200,7 +204,7 @@ async function insertLastChildOf(parentId, context, listKey, fieldKey) {
   };
 }
 async function insertNextSiblingOf(nextSiblingId, context, listKey, fieldKey) {
-  const bdTable = listKey.toLowerCase();
+  const bdTable = listNameToPrismaModel(listKey);
   const destNode = await context.prisma[bdTable].findUnique({
     where: {
       id: nextSiblingId
@@ -227,7 +231,7 @@ async function insertNextSiblingOf(nextSiblingId, context, listKey, fieldKey) {
   };
 }
 async function insertPrevSiblingOf(nextSiblingId, context, listKey, fieldKey) {
-  const bdTable = listKey.toLowerCase();
+  const bdTable = listNameToPrismaModel(listKey);
   const destNode = await context.prisma[bdTable].findUnique({
     where: {
       id: nextSiblingId
@@ -455,7 +459,7 @@ async function deleteResolver(current, options) {
     listKey,
     fieldKey
   } = options;
-  const bdTable = listKey.toLowerCase();
+  const bdTable = listNameToPrismaModel(listKey);
   const left = current[`${fieldKey}_left`];
   const right = current[`${fieldKey}_right`];
   const depth = current[`${fieldKey}_depth`];
@@ -575,7 +579,7 @@ async function updateNode(destLeft, depthDiff, options, current) {
     fieldKey,
     listKey
   } = options;
-  const bdTable = listKey.toLowerCase();
+  const bdTable = listNameToPrismaModel(listKey);
   let left = current[`${fieldKey}_left`];
   let right = current[`${fieldKey}_right`];
   const treeSize = right - left + 1;
@@ -635,7 +639,7 @@ async function shiftLeftRightRange(first, last, increment, options) {
     fieldKey,
     listKey
   } = options;
-  const bdTable = listKey.toLowerCase();
+  const bdTable = listNameToPrismaModel(listKey);
   const transactions = [];
   const leftTree = await context.prisma[bdTable].findMany({
     where: {
@@ -703,7 +707,7 @@ async function shiftLeftRightRange(first, last, increment, options) {
 }
 
 async function updateEntityIsNullFields(data, context, listKey, fieldKey) {
-  const bdTable = listKey.toLowerCase();
+  const bdTable = listNameToPrismaModel(listKey);
   const root = await getRoot(context, fieldKey, listKey);
 
   if (!data && root && root.id) {
@@ -776,7 +780,7 @@ async function nodeIsInTree(data, options) {
     listKey,
     context
   } = options;
-  const bdTable = listKey.toLowerCase();
+  const bdTable = listNameToPrismaModel(listKey);
   let entityId = '';
 
   for (const [key, value] of Object.entries(data)) {
