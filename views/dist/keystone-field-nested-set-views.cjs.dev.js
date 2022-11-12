@@ -20,14 +20,11 @@ const LoadingIndicatorContext = /*#__PURE__*/react.createContext({
   count: 0,
   ref: () => {}
 });
-
 function useFilter(search, list) {
   return react.useMemo(() => {
     let conditions = [];
-
     if (search.length) {
       const trimmedSearch = search.trim();
-
       for (const field of Object.values(list.fields)) {
         if (field.search !== null) {
           conditions.push({
@@ -39,25 +36,21 @@ function useFilter(search, list) {
         }
       }
     }
-
     return {
       OR: conditions
     };
   }, [search, list]);
 }
-
 function useIntersectionObserver(cb, ref) {
   react.useEffect(() => {
     let observer = new IntersectionObserver(cb, {});
     let node = ref.current;
-
     if (node !== null) {
       observer.observe(node);
       return () => observer.unobserve(node);
     }
   });
 }
-
 function useDebouncedValue(value, limitMs) {
   const [debouncedValue, setDebouncedValue] = react.useState(() => value);
   react.useEffect(() => {
@@ -70,12 +63,10 @@ function useDebouncedValue(value, limitMs) {
   }, [value, limitMs]);
   return debouncedValue;
 }
-
 const initialItemsToLoad = 10;
 const subsequentItemsToLoad = 50;
 const NestedSetInput = _ref => {
   var _data$items;
-
   let {
     autoFocus,
     isDisabled,
@@ -122,11 +113,9 @@ const NestedSetInput = _ref => {
                 const {
                   skip
                 } = args;
-
                 for (let i = 0; i < incoming.length; ++i) {
                   merged[skip + i] = incoming[i];
                 }
-
                 return merged;
               }
             }
@@ -135,21 +124,17 @@ const NestedSetInput = _ref => {
       }
     })
   }), [link, list.gqlNames.listQueryName]);
-
   const generateIndent = (label, data) => {
     const depth = data && data[path] ? data[path].depth : 0;
     let text = '';
-
     if (depth > 0) {
       for (let i = 0; i < depth; i++) {
         text += '- ';
       }
     }
-
     text += label;
     return text;
   };
-
   const {
     data,
     error,
@@ -168,11 +153,10 @@ const NestedSetInput = _ref => {
   const count = (data === null || data === void 0 ? void 0 : data.count) || 0;
   const options = (data === null || data === void 0 ? void 0 : (_data$items = data.items) === null || _data$items === void 0 ? void 0 : _data$items.map(_ref3 => {
     let {
-      [idField]: value,
-      [labelField]: label
-    } = _ref3,
-        data = _objectWithoutProperties(_ref3, [idField, labelField].map(_toPropertyKey));
-
+        [idField]: value,
+        [labelField]: label
+      } = _ref3,
+      data = _objectWithoutProperties(_ref3, [idField, labelField].map(_toPropertyKey));
     return {
       value,
       label: generateIndent(label || value, data),
@@ -182,19 +166,15 @@ const NestedSetInput = _ref => {
     };
   })) || [];
   let value = {};
-
   if (state !== null && state !== void 0 && state.parentId) {
     value = options.find(option => option.value === state.parentId);
   }
-
   if (state !== null && state !== void 0 && state.prevSiblingOf) {
     value = options.find(option => option.value === state.prevSiblingOf);
   }
-
   if (state !== null && state !== void 0 && state.nextSiblingOf) {
     value = options.find(option => option.value === state.nextSiblingOf);
   }
-
   const loadingIndicatorContextVal = react.useMemo(() => ({
     count,
     ref: setLoadingIndicatorElement
@@ -205,7 +185,6 @@ const NestedSetInput = _ref => {
       isIntersecting
     }] = _ref4;
     const skip = data === null || data === void 0 ? void 0 : data.items.length;
-
     if (!loading && skip && isIntersecting && options.length < count && ((lastFetchMore === null || lastFetchMore === void 0 ? void 0 : lastFetchMore.where) !== where || (lastFetchMore === null || lastFetchMore === void 0 ? void 0 : lastFetchMore.list) !== list || (lastFetchMore === null || lastFetchMore === void 0 ? void 0 : lastFetchMore.skip) !== skip)) {
       const QUERY = apollo.gql`
               query NestedSetSelectMore($where: ${list.gqlNames.whereInputName}!, $take: Int!, $skip: Int!, $orderBy: [${list.gqlNames.listOrderName}!]) {
@@ -238,11 +217,9 @@ const NestedSetInput = _ref => {
   }, {
     current: loadingIndicatorElement
   });
-
   if (error) {
     return core.jsx("span", null, "Error");
   }
-
   const radioVariants = [{
     label: 'Parent',
     value: 'parentId',
@@ -262,11 +239,9 @@ const NestedSetInput = _ref => {
     marginTop: '1rem',
     flexDirection: 'column'
   };
-
   const setPosition = e => {
     setVariant(e.target.value);
   };
-
   const container = {
     display: 'flex',
     alignItems: 'center',
@@ -279,7 +254,6 @@ const NestedSetInput = _ref => {
   const radioButton = {
     marginBottom: '1rem'
   };
-
   const prepareData = value => {
     if (value) {
       if (variant === '') {
@@ -288,20 +262,17 @@ const NestedSetInput = _ref => {
         });
         return;
       }
-
       switch (variant) {
         case 'parentId':
           onChange({
             parentId: value.value
           });
           return;
-
         case 'prevSiblingOf':
           onChange({
             prevSiblingOf: value.value
           });
           return;
-
         case 'nextSiblingOf':
           onChange({
             nextSiblingOf: value.value
@@ -309,10 +280,8 @@ const NestedSetInput = _ref => {
           return;
       }
     }
-
     return;
   };
-
   return core.jsx("div", {
     style: container
   }, core.jsx("div", {
@@ -352,10 +321,9 @@ const NestedSetInput = _ref => {
 const relationshipSelectComponents = {
   MenuList: _ref5 => {
     let {
-      children
-    } = _ref5,
-        props = _objectWithoutProperties(_ref5, _excluded);
-
+        children
+      } = _ref5,
+      props = _objectWithoutProperties(_ref5, _excluded);
     const {
       count,
       ref
@@ -374,12 +342,13 @@ const relationshipSelectComponents = {
 };
 
 const Cell = _ref => {
+  var _item$field$path$pare;
   let {
     item,
     field,
     linkTo
   } = _ref;
-  let value = item[field.path] + '';
+  let value = (_item$field$path$pare = item[field.path].parentId) !== null && _item$field$path$pare !== void 0 ? _item$field$path$pare : '';
   return linkTo ? core.jsx(components.CellLink, linkTo, value) : core.jsx(components.CellContainer, null, value);
 };
 Cell.supportsLinkTo = true;
@@ -413,6 +382,13 @@ const controller = config => {
   return {
     path: config.path,
     label: config.label,
+    labelField: 'parentId',
+    description: config.description,
+    defaultValue: {
+      kind: 'one',
+      initialValue: null,
+      value: null
+    },
     listKey: config.listKey,
     refListKey: config.fieldMeta.listKey,
     display: {
@@ -434,7 +410,6 @@ const controller = config => {
           [config.path]: _objectSpread({}, value)
         };
       }
-
       return value;
     }
   };

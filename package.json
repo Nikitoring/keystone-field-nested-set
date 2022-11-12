@@ -8,6 +8,7 @@
   "scripts": {
     "format": "prettier --write \"**/*.js{,on}\" \"**/*.md\"",
     "build": "preconstruct build",
+    "dev": "preconstruct dev",
     "release": "yarn build && yarn publish"
   },
   "preconstruct": {
@@ -26,20 +27,16 @@
     "@babel/preset-react": "^7.16.0",
     "@babel/preset-typescript": "^7.16.0",
     "@babel/runtime": "^7.16.3",
-    "@keystone-6/core": "^1.0.0",
-    "@keystone-ui/core": "^4.0.0",
-    "@keystone-ui/fields": "^6.0.0",
+    "@keystone-6/core": "^3.0.1",
+    "@keystone-ui/core": "^5.0.1",
+    "@keystone-ui/fields": "^7.1.1",
     "@manypkg/cli": "0.18.0",
     "@preconstruct/cli": "^2.1.5",
     "@types/react": "^17.0.35",
-    "apollo-server-micro": "^3.5.0",
-    "graphql": "^15.7.2",
-    "graphql-tag": "^2.12.5",
     "intersection-observer": "^0.12.0",
     "prettier": "^2.4.1",
-    "react": "^17.0.2",
-    "typescript": "^4.4.4",
-    "uuid": "^8.3.2"
+    "react": "^18",
+    "typescript": "~4.7.4"
   },
   "prettier": {
     "proseWrap": "preserve",

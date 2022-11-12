@@ -1,6 +1,6 @@
 /** @jsxRuntime classic */
 /** @jsx jsx */
-import { jsx, useTheme } from '@keystone-ui/core';
+import { jsx } from '@keystone-ui/core';
 import { FieldContainer, FieldLabel } from '@keystone-ui/fields';
 
 import {
@@ -9,7 +9,6 @@ import {
   FieldController,
   FieldControllerConfig,
   FieldProps,
-  ListMeta,
 } from '@keystone-6/core/types';
 
 import { useList } from '@keystone-6/core/admin-ui/context';
@@ -19,7 +18,7 @@ import { CellLink, CellContainer } from '@keystone-6/core/admin-ui/components';
 import { NestedSetInput } from './NestedSetInput';
 
 export const Cell: CellComponent = ({ item, field, linkTo }) => {
-  let value = item[field.path] + '';
+  let value = item[field.path].parentId ?? '';
   return linkTo ? <CellLink {...linkTo}>{value}</CellLink> : <CellContainer>{value}</CellContainer>;
 };
 Cell.supportsLinkTo = true;
@@ -58,15 +57,21 @@ type NestedSetData = {
 
 export type NestedSetValue = null | NestedSetData;
 
+type NestedSetControllerDisplay = {
+  mode: string,
+  refLabelField: string;
+}
+
 type NestedSetController = FieldController<NestedSetValue> & {
-  listkey: string;
+  listKey: string;
+  refListKey: string;
   labelField: string;
-  displayMode: 'select';
+  display: NestedSetControllerDisplay;
 };
 
 export const controller = (
   config: FieldControllerConfig<{
-    listkey: string;
+    listKey: string;
     labelField: string;
     displayMode: string;
   }>
@@ -74,6 +79,13 @@ export const controller = (
   return {
     path: config.path,
     label: config.label,
+    labelField: 'parentId',
+    description: config.description,
+    defaultValue: {
+      kind: 'one',
+      initialValue: null,
+      value: null,
+    },
     listKey: config.listKey,
     refListKey: config.fieldMeta.listKey,
     display: {
