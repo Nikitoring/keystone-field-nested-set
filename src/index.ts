@@ -199,7 +199,6 @@ export const nestedSet =
       ...config,
       isIndexed: 'unique',
       getAdminMeta: (
-        adminMetaRoot: AdminMetaRootVal
       ): Parameters<typeof import('./views').controller>[0]['fieldMeta'] => {
         if (!listTypes) {
           throw new Error(
@@ -208,7 +207,8 @@ export const nestedSet =
         }
         return {
           listKey: meta.listKey,
-          labelField: adminMetaRoot.listsByKey[meta.listKey].labelField,
+          labelField: meta.fieldKey,
+          displayMode: 'input',
         };
       },
     };
@@ -331,7 +331,7 @@ export const nestedSet =
           return { ...value };
         },
       }),
-      views,
+      views: 'keystone-field-nested-set/views',
       unreferencedConcreteInterfaceImplementaetions: [NestedSetFieldOutput],
     });
   };

@@ -17,13 +17,18 @@ declare type NestedSetData = {
     } | null;
 };
 export declare type NestedSetValue = null | NestedSetData;
+declare type NestedSetControllerDisplay = {
+    mode: string;
+    refLabelField: string;
+};
 declare type NestedSetController = FieldController<NestedSetValue> & {
-    listkey: string;
+    listKey: string;
+    refListKey: string;
     labelField: string;
-    displayMode: 'select';
+    display: NestedSetControllerDisplay;
 };
 export declare const controller: (config: FieldControllerConfig<{
-    listkey: string;
+    listKey: string;
     labelField: string;
     displayMode: string;
 }>) => NestedSetController;
