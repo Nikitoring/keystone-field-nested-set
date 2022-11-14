@@ -1,6 +1,6 @@
 {
   "name": "keystone-field-nested-set",
-  "version": "1.1.9",
+  "version": "1.1.10",
   "description": "nested set field for keystonejs",
   "main": "dist/keystone-field-nested-set.cjs.js",
   "module": "dist/keystone-field-nested-set.esm.js",
