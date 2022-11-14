@@ -2,7 +2,6 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-var _objectDestructuringEmpty = require('@babel/runtime/helpers/objectDestructuringEmpty');
 var _extends = require('@babel/runtime/helpers/extends');
 var _objectSpread = require('@babel/runtime/helpers/objectSpread2');
 var path = require('path');
@@ -16,15 +15,19 @@ var path__default = /*#__PURE__*/_interopDefault(path);
 function listNameToPrismaModel(listKey) {
   return listKey[0].toLowerCase() + listKey.slice(1);
 }
+
 function isRoot(data) {
   return !!(data.left === 1);
 }
+
 function isAncestorOf(parenNode, current) {
   return parenNode.left > current.left && parenNode.right < current.right;
 }
+
 function isEqualTo(parenNode, current) {
   return Number(parenNode.left) === Number(current.left) && Number(parenNode.right) === Number(current.right);
 }
+
 async function getRoot(context, field, listType) {
   const roots = await context.prisma[listNameToPrismaModel(listType)].findMany({
     where: {
@@ -35,9 +38,11 @@ async function getRoot(context, field, listType) {
       id: true
     }
   });
+
   if (!roots) {
     return {};
   }
+
   return roots[0];
 }
 async function createRoot() {
@@ -57,6 +62,7 @@ async function getParentId(data, context, field, listType) {
   if (isRoot(data)) {
     return null;
   }
+
   const dbTable = listNameToPrismaModel(listType);
   const parent = await context.prisma[dbTable].findMany({
     where: {
@@ -72,15 +78,18 @@ async function getParentId(data, context, field, listType) {
       id: true
     }
   });
+
   if (parent.length) {
     return parent[0].id;
   }
+
   return '';
 }
 async function getchildrenCount(data, context, field, listType) {
   if (isLeaf(data)) {
     return 0;
   }
+
   const children = await context.prisma[listNameToPrismaModel(listType)].findMany({
     where: {
       [`${field}_left`]: {
@@ -169,6 +178,7 @@ async function insertLastChildOf(parentId, context, listKey, fieldKey) {
   if (!parentNode) return false;
   const tree = await fetchTree(parentNode, context, listKey, fieldKey);
   let transactions = [];
+
   for (const node of tree) {
     if (node[`${fieldKey}_left`] > parentNode[`${fieldKey}_right`]) {
       transactions.push(context.prisma[bdTable].update({
@@ -181,6 +191,7 @@ async function insertLastChildOf(parentId, context, listKey, fieldKey) {
         }
       }));
     }
+
     if (node[`${fieldKey}_right`] >= parentNode[`${fieldKey}_right`] && node[`${fieldKey}_left`] < parentNode[`${fieldKey}_right`]) {
       transactions.push(context.prisma[bdTable].update({
         where: {
@@ -192,6 +203,7 @@ async function insertLastChildOf(parentId, context, listKey, fieldKey) {
       }));
     }
   }
+
   await context.prisma.$transaction(transactions);
   return {
     left: parentNode[`${fieldKey}_right`],
@@ -253,6 +265,7 @@ async function insertPrevSiblingOf(nextSiblingId, context, listKey, fieldKey) {
     depth: destNode[`${fieldKey}_depth`]
   };
 }
+
 async function fetchTree(parentNode, context, listKey, fieldKey) {
   const options = {
     where: {
@@ -275,6 +288,7 @@ async function fetchTree(parentNode, context, listKey, fieldKey) {
   };
   return await context.prisma[listNameToPrismaModel(listKey)].findMany(options);
 }
+
 async function moveNode(inputData, context, listKey, fieldKey, current) {
   if (!inputData[fieldKey]) return {};
   if (!Object.keys(current).length) return null;
@@ -283,6 +297,7 @@ async function moveNode(inputData, context, listKey, fieldKey, current) {
     prevSiblingOf,
     nextSiblingOf
   } = inputData[fieldKey];
+
   if (parentId) {
     if (parentId === current.id) throw new Error(`You can't choose the same entity`);
     return await moveAsChildOf(parentId, current, {
@@ -291,6 +306,7 @@ async function moveNode(inputData, context, listKey, fieldKey, current) {
       listKey
     });
   }
+
   if (prevSiblingOf) {
     if (prevSiblingOf === current.id) throw new Error(`You can't choose the same entity`);
     return await moveAsPrevSiblingOf(prevSiblingOf, current, {
@@ -299,6 +315,7 @@ async function moveNode(inputData, context, listKey, fieldKey, current) {
       listKey
     });
   }
+
   if (nextSiblingOf) {
     if (nextSiblingOf === current.id) throw new Error(`You can't choose the same entity`);
     return await moveAsNextSiblingOf(nextSiblingOf, current, {
@@ -308,6 +325,7 @@ async function moveNode(inputData, context, listKey, fieldKey, current) {
     });
   }
 }
+
 async function moveAsChildOf(parentId, current, options) {
   if (!parentId) return {
     depth: null
@@ -338,9 +356,11 @@ async function moveAsChildOf(parentId, current, options) {
     left: current[`${fieldKey}_left`],
     depth: current[`${fieldKey}_depth`]
   };
+
   if (parentId === current.id || isAncestorOf(prepareParentNode, currentNode) || isEqualTo(prepareParentNode, currentNode)) {
     throw new Error('Cannot move node as first child of itself or into a descendant');
   }
+
   if (parentNode && parentNode.id) {
     const newDepth = parentNode[`${fieldKey}_depth`] + 1;
     await updateNode(parentNode[`${fieldKey}_right`], newDepth - current[`${fieldKey}_depth`], {
@@ -353,6 +373,7 @@ async function moveAsChildOf(parentId, current, options) {
     };
   }
 }
+
 async function moveAsPrevSiblingOf(prevSiblingOfId, current, options) {
   const {
     context,
@@ -380,9 +401,11 @@ async function moveAsPrevSiblingOf(prevSiblingOfId, current, options) {
     left: current[`${fieldKey}_left`],
     depth: current[`${fieldKey}_depth`]
   };
+
   if (prevSiblingOfId === current.id || isAncestorOf(parentNode, currentNode) || isEqualTo(parentNode, currentNode)) {
     throw new Error('Cannot move node as previous sibling of itself');
   }
+
   const newDepth = prevSiblingNode[`${fieldKey}_depth`];
   await updateNode(prevSiblingNode[`${fieldKey}_left`], newDepth - current[`${fieldKey}_depth`], {
     context,
@@ -393,6 +416,7 @@ async function moveAsPrevSiblingOf(prevSiblingOfId, current, options) {
     depth: newDepth
   };
 }
+
 async function moveAsNextSiblingOf(nextSiblingId, current, options) {
   const {
     context,
@@ -420,9 +444,11 @@ async function moveAsNextSiblingOf(nextSiblingId, current, options) {
     left: current[`${fieldKey}_left`],
     depth: current[`${fieldKey}_depth`]
   };
+
   if (nextSiblingId === current.id || isAncestorOf(parentNode, currentNode) || isEqualTo(parentNode, currentNode)) {
     throw new Error('Cannot move node as next sibling of itself');
   }
+
   const newDepth = prevSiblingNode[`${fieldKey}_depth`];
   await updateNode(prevSiblingNode[`${fieldKey}_right`] + 1, newDepth - current[`${fieldKey}_depth`], {
     context,
@@ -433,6 +459,7 @@ async function moveAsNextSiblingOf(nextSiblingId, current, options) {
     depth: newDepth
   };
 }
+
 async function deleteResolver(current, options) {
   if (!current.id) return;
   const {
@@ -469,9 +496,11 @@ async function deleteResolver(current, options) {
       [`${fieldKey}_depth`]: true
     }
   });
+
   if (childrenTree && childrenTree.length) {
     for (const child of childrenTree) {
       const move = await moveAsChildOf(parentId, child, options);
+
       if (move && move.depth !== null && move.depth !== undefined) {
         await context.prisma[bdTable].update({
           where: {
@@ -484,8 +513,10 @@ async function deleteResolver(current, options) {
       }
     }
   }
+
   return;
 }
+
 async function shiftLeftRghtValues(first, increment, options) {
   const {
     context,
@@ -506,6 +537,7 @@ async function shiftLeftRghtValues(first, increment, options) {
     }
   });
   let transactions = [];
+
   if (childrenTree && childrenTree.length) {
     for (const child of childrenTree) {
       transactions.push(context.prisma[bdTable].update({
@@ -518,6 +550,7 @@ async function shiftLeftRghtValues(first, increment, options) {
       }));
     }
   }
+
   const parentTree = await context.prisma[bdTable].findMany({
     where: {
       [`${field}_right`]: {
@@ -531,6 +564,7 @@ async function shiftLeftRghtValues(first, increment, options) {
       [`${field}_depth`]: true
     }
   });
+
   if (parentTree && parentTree.length) {
     for (const child of parentTree) {
       transactions.push(context.prisma[bdTable].update({
@@ -543,8 +577,10 @@ async function shiftLeftRghtValues(first, increment, options) {
       }));
     }
   }
+
   return await context.prisma.$transaction(transactions);
 }
+
 async function updateNode(destLeft, depthDiff, options, current) {
   const {
     context,
@@ -560,10 +596,12 @@ async function updateNode(destLeft, depthDiff, options, current) {
     field: fieldKey,
     bdTable
   });
+
   if (left >= destLeft) {
     left += treeSize;
     right += treeSize;
   }
+
   const childrenTree = await context.prisma[bdTable].findMany({
     where: {
       [`${fieldKey}_left`]: {
@@ -581,6 +619,7 @@ async function updateNode(destLeft, depthDiff, options, current) {
     }
   });
   const transactions = [];
+
   for (const child of childrenTree) {
     transactions.push(context.prisma[bdTable].update({
       where: {
@@ -591,6 +630,7 @@ async function updateNode(destLeft, depthDiff, options, current) {
       }
     }));
   }
+
   await context.prisma.$transaction(transactions);
   await shiftLeftRightRange(left, right, destLeft - left, options);
   await shiftLeftRghtValues(right + 1, 0 - treeSize, {
@@ -600,6 +640,7 @@ async function updateNode(destLeft, depthDiff, options, current) {
   });
   return;
 }
+
 async function shiftLeftRightRange(first, last, increment, options) {
   const {
     context,
@@ -627,6 +668,7 @@ async function shiftLeftRightRange(first, last, increment, options) {
       [`${fieldKey}_depth`]: true
     }
   });
+
   for (const node of leftTree) {
     transactions.push(context.prisma[bdTable].update({
       where: {
@@ -637,6 +679,7 @@ async function shiftLeftRightRange(first, last, increment, options) {
       }
     }));
   }
+
   const rightTree = await context.prisma[bdTable].findMany({
     where: {
       AND: [{
@@ -656,6 +699,7 @@ async function shiftLeftRightRange(first, last, increment, options) {
       [`${fieldKey}_depth`]: true
     }
   });
+
   for (const node of rightTree) {
     transactions.push(context.prisma[bdTable].update({
       where: {
@@ -666,11 +710,14 @@ async function shiftLeftRightRange(first, last, increment, options) {
       }
     }));
   }
+
   return await context.prisma.$transaction(transactions);
 }
+
 async function updateEntityIsNullFields(data, context, listKey, fieldKey) {
   const bdTable = listNameToPrismaModel(listKey);
   const root = await getRoot(context, fieldKey, listKey);
+
   if (!data && root && root.id) {
     const {
       left,
@@ -683,17 +730,21 @@ async function updateEntityIsNullFields(data, context, listKey, fieldKey) {
       depth
     };
   }
+
   if (!data && !root) {
     throw new Error('Please< create root before update this entity');
   }
+
   let entityId = '';
   let entityType = '';
+
   for (const [key, value] of Object.entries(data)) {
     if (value) {
       entityId = value;
       entityType = key;
     }
   }
+
   const entity = await context.prisma[bdTable].findUnique({
     where: {
       id: entityId
@@ -706,6 +757,7 @@ async function updateEntityIsNullFields(data, context, listKey, fieldKey) {
     }
   });
   const isEntityWithField = !!(entity[`${fieldKey}_right`] && entity[`${fieldKey}_left`]);
+
   if (!isEntityWithField && root) {
     const {
       left,
@@ -718,11 +770,14 @@ async function updateEntityIsNullFields(data, context, listKey, fieldKey) {
       depth
     };
   }
+
   switch (entityType) {
     case 'parentId':
       return await insertLastChildOf(entityId, context, listKey, fieldKey);
+
     case 'prevSiblingOf':
       return await insertPrevSiblingOf(entityId, context, listKey, fieldKey);
+
     case 'nextSiblingOf':
       return await insertNextSiblingOf(entityId, context, listKey, fieldKey);
   }
@@ -735,11 +790,13 @@ async function nodeIsInTree(data, options) {
   } = options;
   const bdTable = listNameToPrismaModel(listKey);
   let entityId = '';
+
   for (const [key, value] of Object.entries(data)) {
     if (value) {
       entityId = value;
     }
   }
+
   const entity = await context.prisma[bdTable].findUnique({
     where: {
       id: entityId
@@ -751,9 +808,11 @@ async function nodeIsInTree(data, options) {
       [`${fieldKey}_depth`]: true
     }
   });
+
   if (!entity[`${fieldKey}_left`]) {
     throw new Error(`Please add this entity ${entityId} in tree`);
   }
+
   return;
 }
 
@@ -770,18 +829,23 @@ const nestedSetOutputFields = core.graphql.fields()({
   }),
   weight: core.graphql.field({
     type: core.graphql.nonNull(core.graphql.Int),
+
     resolve(item, args, type, context) {
       return getWeight(_objectSpread({}, item));
     }
+
   }),
   isLeaf: core.graphql.field({
     type: core.graphql.nonNull(core.graphql.Boolean),
+
     resolve(item) {
       return isLeaf(_objectSpread({}, item));
     }
+
   }),
   parentId: core.graphql.field({
     type: core.graphql.ID,
+
     resolve(item, args, context, info) {
       const {
         key,
@@ -789,9 +853,11 @@ const nestedSetOutputFields = core.graphql.fields()({
       } = info.path.prev;
       return getParentId(_objectSpread({}, item), context, key, typename);
     }
+
   }),
   childrenCount: core.graphql.field({
     type: core.graphql.nonNull(core.graphql.Int),
+
     resolve(item, args, context, info) {
       const {
         key,
@@ -799,6 +865,7 @@ const nestedSetOutputFields = core.graphql.fields()({
       } = info.path.prev;
       return getchildrenCount(_objectSpread({}, item), context, key, typename);
     }
+
   })
 });
 const NestedSetOutput = core.graphql.interface()({
@@ -842,33 +909,43 @@ const NestedSetFilterInput = core.graphql.inputObject({
     })
   }
 });
+
 async function inputResolver(data, context, listKey, fieldKey) {
   if (data === null || data === undefined) {
     const isRoot = await getRoot(context, fieldKey, listKey);
+
     if (isRoot) {
       return await insertLastChildOf(isRoot.id, context, listKey, fieldKey);
     }
+
     return createRoot();
   }
+
   const {
     parentId,
     prevSiblingOf,
     nextSiblingOf
   } = data;
+
   if (parentId) {
     return await insertLastChildOf(parentId, context, listKey, fieldKey);
   }
+
   if (nextSiblingOf) {
     return await insertNextSiblingOf(nextSiblingOf, context, listKey, fieldKey);
   }
+
   if (prevSiblingOf) {
     return await insertPrevSiblingOf(prevSiblingOf, context, listKey, fieldKey);
   }
+
   return data;
 }
+
 async function updateEntityIsNull(data, id, context, listKey, fieldKey) {
   return await updateEntityIsNullFields(data, id, context, listKey);
 }
+
 async function filterResolver(data, context, listKey, fieldKey) {
   const {
     prevSiblingId,
@@ -877,35 +954,45 @@ async function filterResolver(data, context, listKey, fieldKey) {
     parentOf
   } = data;
   let result = {};
+
   if (prevSiblingId) {
     const prevSiblingQuery = await getPrevSibling(prevSiblingId, context, listKey, fieldKey);
     result = _objectSpread(_objectSpread({}, result), prevSiblingQuery);
   }
+
   if (nextSiblingId) {
     const nextSiblingQuery = await getNextSibling(nextSiblingId, context, listKey, fieldKey);
     result = _objectSpread(_objectSpread({}, result), nextSiblingQuery);
   }
+
   if (childOf) {
     const childQuery = await getChildOf(childOf, context, listKey, fieldKey);
     result = _objectSpread(_objectSpread({}, result), childQuery);
   }
+
   if (parentOf) {
     const parentQuery = await getParentOf(parentOf, context, listKey, fieldKey);
     result = _objectSpread(_objectSpread({}, result), parentQuery);
   }
+
   return result;
 }
+
 const nestedSet = function () {
   let _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-  let config = _extends({}, (_objectDestructuringEmpty(_ref), _ref));
+
+  let config = _extends({}, _ref);
+
   return meta => {
     const listTypes = meta.lists[meta.listKey].types;
+
     const commonConfig = _objectSpread(_objectSpread({}, config), {}, {
       isIndexed: 'unique',
       getAdminMeta: () => {
         if (!listTypes) {
           throw new Error(`The ref [${listTypes}] on relationship [${meta.listKey}.${meta.fieldKey}] is invalid`);
         }
+
         return {
           listKey: meta.listKey,
           labelField: meta.fieldKey,
@@ -913,6 +1000,7 @@ const nestedSet = function () {
         };
       }
     });
+
     return types.fieldType({
       kind: 'multi',
       fields: {
@@ -944,6 +1032,7 @@ const nestedSet = function () {
             resolvedData,
             context
           } = _ref2;
+
           if (operation === 'create') {
             if (inputData[fieldKey] && Object.keys(inputData[fieldKey]).length) {
               await nodeIsInTree(inputData[fieldKey], {
@@ -953,8 +1042,10 @@ const nestedSet = function () {
               });
             }
           }
+
           if (operation === 'update') {
             let currentItem = {};
+
             if (item && item.id && item[`${fieldKey}_left`] !== null && item[`${fieldKey}_right`] !== null) {
               currentItem = {
                 id: item.id,
@@ -963,11 +1054,14 @@ const nestedSet = function () {
                 [`${fieldKey}_depth`]: item[`${fieldKey}_depth`]
               };
             }
+
             if (!Object.keys(currentItem).length) {
               return updateEntityIsNull(inputData[fieldKey], context, listKey, fieldKey);
             }
+
             return moveNode(inputData, context, listKey, fieldKey, currentItem);
           }
+
           return resolvedData[fieldKey];
         },
         validateDelete: async _ref3 => {
@@ -978,6 +1072,7 @@ const nestedSet = function () {
             context,
             operation
           } = _ref3;
+
           if (operation === 'delete') {
             let currentItem = {};
             if (!item.id) return;
@@ -994,6 +1089,7 @@ const nestedSet = function () {
               fieldKey
             });
           }
+
           return;
         }
       },
@@ -1002,25 +1098,31 @@ const nestedSet = function () {
           arg: core.graphql.arg({
             type: NestedSetFilterInput
           }),
+
           resolve(value, context) {
             return filterResolver(value, context, meta.listKey, meta.fieldKey);
           }
+
         },
         create: {
           arg: core.graphql.arg({
             type: NestedSetFieldInput
           }),
+
           async resolve(value, context) {
             return inputResolver(value, context, meta.listKey, meta.fieldKey);
           }
+
         },
         update: {
           arg: core.graphql.arg({
             type: NestedSetFieldInput
           }),
+
           async resolve(value, context, resolve) {
             return;
           }
+
         },
         orderBy: {
           arg: core.graphql.arg({
@@ -1035,15 +1137,19 @@ const nestedSet = function () {
       },
       output: core.graphql.field({
         type: NestedSetFieldOutput,
+
         resolve(_ref4) {
           let {
             value
           } = _ref4;
+
           if (value.left === null || value.left === undefined || value.right === null || value.right === undefined || value.depth === null || value.depth === undefined) {
             return null;
           }
+
           return _objectSpread({}, value);
         }
+
       }),
       views: 'keystone-field-nested-set/views',
       unreferencedConcreteInterfaceImplementaetions: [NestedSetFieldOutput]
